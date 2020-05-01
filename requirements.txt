@@ -1,0 +1,4 @@
+cython
+requests
+bs4
+emoji
