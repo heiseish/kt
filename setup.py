@@ -1,13 +1,14 @@
-from distutils.core import setup
-from distutils.extension import Extension
 from Cython.Build import cythonize
 from Cython.Distutils import build_ext
-from Cython.Compiler import Options
 from distutils.command.sdist import sdist as _sdist
+from setuptools import setup, find_packages, Extension
+import pathlib
 
-Options.embed = 'main'
-cmdclass = {}
-cmdclass.update({'build_ext': build_ext})
+HERE = pathlib.Path(__file__).parent
+README = (HERE / "README.md").read_text()
+deps = []
+with open('requirements.txt', 'r') as f:
+    deps = f.readlines()
 
 extensions = [
     Extension(
@@ -18,6 +19,11 @@ extensions = [
     ),
 ]
 
+
+cmdclass = {}
+cmdclass.update({'build_ext': build_ext})
+
+
 class sdist(_sdist):
     def run(self):
         # Make sure the compiled Cython files in the distribution are up-to-date
@@ -27,8 +33,25 @@ class sdist(_sdist):
 cmdclass['sdist'] = sdist
 
 setup(
-    name='ktlib',
+    name='kttool',
     cmdclass=cmdclass,
     ext_modules=extensions,
+    version="1.0.1",
+    description="Kattis command line tool",
+    long_description=README,
+    long_description_content_type="text/markdown",
+    url="https://github.com/heiseish/kt",
+    author="Dao Truong Giang",
+    author_email="dtrnggiang@gmail.com",
+    license="MIT",
+    classifiers=[
+        "License :: OSI Approved :: MIT License",
+        "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3.7",
+    ],
+    packages=find_packages(),
+    include_package_data=True,
+    install_requires=deps,
+    scripts=['kt']
 )
 

@@ -4,27 +4,84 @@ from typing import List, Tuple
 from libcpp.string cimport string
 from libcpp.vector cimport vector
 from libcpp cimport bool as bool_t
-from cython.view cimport array as cvarray
 import requests
 import os
 import re
 import time
+import shutil
 from bs4 import BeautifulSoup
 import multiprocessing
 import concurrent.futures
+from reprint import output
+from html.parser import HTMLParser
+import emoji
+from collections import namedtuple
+import subprocess
+from subprocess import Popen, PIPE
+import json
+import shlex
+
 if sys.version_info[0] >= 3:
     import configparser
 else:
     import ConfigParser as configparser
-from html.parser import HTMLParser
-import emoji
 
 __all__ = [
     'arg_parse',
     'color_red'
 ]
 
+PLanguage = namedtuple('ProgrammingLanguage', 
+    ['alias', 'extension', 'full_name', 'pre_script', 'script', 'post_script']
+)
 _HEADERS = {'User-Agent': 'kt'}
+cdef object map_template_to_plang = {
+    'c': PLanguage('c', 'c','C', 
+        'gcc $%file%$.c -o $%file%$.out',
+        './$%file%$.out',
+        'rm $%file%$.out'
+    ),
+    'cpp': PLanguage('cpp', 'cpp', 'C++',
+        'g++ -std=c++14 -D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC -O3 $%file%$.cpp -o $%file%$.out',
+        './$%file%$.out',
+        'rm $%file%$.out'
+    ),
+    'cc': PLanguage('cc', 'cc', 'C++', 
+        'g++ -std=c++14 -D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC -O3 $%file%$.cc -o $%file%$.out',
+        './$%file%$.out',
+        'rm $%file%$.out'
+    ),
+    'go': PLanguage('go', 'go', 'Go', 
+        'go build -o $%file%$',
+        './$%file%$',
+        'rm $%file%$'
+    ),
+    'java': PLanguage('java', 'java', 'Java', 
+        'javac *.java',
+        './$%file%$',
+        'rm $%file%$'
+    ),
+    'js': PLanguage('js', 'js', 'JavaScript', 
+        '',
+        'node $%file%$.js',
+        ''
+    ),
+    'rs': PLanguage('rs', 'rs', 'Rust', 
+        'rustc $%file%$.rs',
+        './$%file%$',
+        'rm $%file%$'
+    ),
+    'py2': PLanguage('py2', 'py', 'Python 2', 
+        '',
+        'python2 $%file%$.py',
+        ''
+    ),
+    'py3': PLanguage('py3', 'py', 'Python 3', 
+        '',
+        'python3 $%file%$.py',
+        ''
+    )
+}
 
 BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE = range(90, 98)
 BOLD_SEQ = '\033[1m'
@@ -41,19 +98,44 @@ cdef str _color_green(str text):
 cdef str _color_red(str text):
     return f'{COLOR_SEQ.format(RED)}{text}{RESET_SEQ}'
 
+cdef str strike(str text):
+    cdef str result = ''
+    for c in text:
+        result = result + c + '\u0336'
+    return result
+
 cdef class ConfigError(Exception):
     pass
 
+
+cdef str ask_with_default(str qu, str default_val=''):
+    qu = f'Please enter {_color_cyan(qu)}'
+    if default_val:
+        qu = f'{qu} | Default value: {default_val}\n'
+    cdef str ret = input(qu)
+    if not ret:
+        return default_val
+    return ret
+
+cdef void make_list_equal(list1, list2, str pad_element=''):
+    if len(list1) < len(list2):
+        list1 += [ pad_element ] * (len(list2) - len(list1))
+    elif len(list1) > len(list2):
+        list2 += [ pad_element ] * (len(list1) - len(list2))
+
 cdef class Action(object):
     cdef str config_path
-    cdef str host_name 
-    cdef str submit_url
-    cdef str submissions_url
     cdef object cfg
     cdef object cookies
+    cdef str kt_config
 
+    
     def __cinit__(self):
         self.config_path = os.path.join(os.getenv('HOME'), '.kattisrc')
+        self.kt_config = os.path.join(os.getenv('HOME'), '.ktconfig')
+        if not os.path.exists(self.kt_config):
+            with open(self.kt_config, 'w') as f:
+                f.write('{}\n')
 
     cdef str get_url(self, str option, str default):
         cdef str kattis_host
@@ -65,6 +147,9 @@ cdef class Action(object):
 
 
     cdef read_config_from_file(self):
+        ''' Read config from kattisrc file, which should be located at
+        `$HOME/.kattisrc`
+        '''
         self.cfg = configparser.ConfigParser()
         if not os.path.exists(self.config_path):
             raise RuntimeError(f'No valid config file at {self.config_path}')
@@ -84,9 +169,12 @@ cdef class Action(object):
         Your .kattisrc file appears corrupted. It must provide a token (or a
         KATTIS password).
         Please download a new .kattisrc file''')
+        print(f'Username: {username}')
 
 
     cdef login(self):
+        ''' Try to login and obtain cookies from succesful signin
+        '''
         username = self.cfg.get('user', 'username')
         password = token = None
         try:
@@ -114,9 +202,6 @@ cdef class Action(object):
                 err = f'Status code: {login_reply.status_code}'
             raise RuntimeError(f'Login failed. {err}')
         self.cookies = login_reply.cookies
-        # print(_color_green('Login successfully'))
-
-
 
     cdef _act(self):
         raise NotImplementedError
@@ -126,7 +211,7 @@ cdef class Action(object):
         self._act()
 
 
-cdef cwrite_samples(sample_data: Tuple[int, str, str, bool]):
+cdef void cwrite_samples(sample_data: Tuple[int, str, str, bool]):
     cdef str file_name_prefix = 'in' if sample_data[3] else 'ans'
     cdef str file_name = f'{sample_data[2]}/{file_name_prefix}{sample_data[0]}.txt'
     with open(file_name, 'w') as f:
@@ -162,33 +247,168 @@ cdef class Gen(Action):
             executor.map(write_samples, sample_data)
         print(_color_green(f'Generate {len(sample_data) // 2} sample(s) to {self._problem_id}'))
 
+        if not os.path.exists(self.kt_config):
+            print(_color_red('kt_config file has not been set up so no template was generated. '
+            'Please use `kt config` to set up a template file'))
+            return
+
+        cdef object template_file = {}
+        with open(self.kt_config, 'r') as f:
+            template_file = json.load(f)
+        for k, template in template_file.items():
+            if template.get('default', False):
+                shutil.copyfile(template.get('path'), f'{self._problem_id}/{self._problem_id}.{map_template_to_plang[k].extension}')
+                print(_color_green('Template file has been generated'))
+                return
+        print(_color_red(f'No default template detected in {self.kt_config}'))
+
 
 
     cdef _act(self):
         print(f'Problem is {self._problem_id}')
         os.makedirs(self._problem_id, exist_ok=True)
         self._gen_samples()
-
     
 
 cdef class Test(Action):
-    def __cinit__(self):
-        pass
+    cdef str file_name
+    cdef str pre_script
+    cdef str script
+    cdef str post_script
+
+    cdef detect_file_name(self):
+        cdef object existed_templates = {}
+        cdef object acceptable_file_ext = {}
+        with open(self.kt_config) as f:
+            existed_templates = json.load(f)
+        
+        for k, v in existed_templates.items():
+            acceptable_file_ext[map_template_to_plang[k].extension] = map_template_to_plang[k]
+
+        files = [f for f in os.listdir('.') if os.path.isfile(f)]
+        runnable_files = []
+        for f in files:
+            parts = f.split('.')
+            if len(parts) <= 1:
+                continue
+            if  parts[1] in acceptable_file_ext:
+                runnable_files.append((parts[0], f, parts[1]))
+        cdef str alias
+        if len(runnable_files) == 0:
+            raise RuntimeError('Not executable code file detected')
+
+        if len(runnable_files) == 1:
+            self.file_name = runnable_files[0][0]
+            alias = acceptable_file_ext[runnable_files[0][2]].alias
+            self.pre_script = existed_templates.get(alias, {}).get('pre_script').replace('$%file%$', self.file_name)
+            self.script = existed_templates.get(alias, {}).get('script').replace('$%file%$', self.file_name)
+            self.post_script = existed_templates.get(alias, {}).get('post_script').replace('$%file%$', self.file_name)
+            return
+
+        print('Multiple code files detected in the folder. Which one would you like to test')
+        for i in range(len(runnable_files)):
+            print(f'{i}: {runnable_files[i][1]}')
+        cdef str res = input()
+        cdef int opt = int(res)
+        assert 0 <= opt < len(runnable_files), 'Invalid option chosen'
+        self.file_name = runnable_files[opt][0]
+        alias = acceptable_file_ext[runnable_files[opt][2]].alias
+        self.pre_script = existed_templates.get(alias, {}).get('pre_script').replace('$%file%$', self.file_name)
+        self.script = existed_templates.get(alias, {}).get('script').replace('$%file%$', self.file_name)
+        self.post_script = existed_templates.get(alias, {}).get('post_script').replace('$%file%$', self.file_name)
+
 
     cdef _act(self):
-        pass
+        self.detect_file_name()
+        print(f'Runnable code is {self.file_name}')
+        input_files = [f for f in os.listdir('.') if os.path.isfile(f) and f.startswith('in')]
+        output_files = [f for f in os.listdir('.') if os.path.isfile(f) and f.startswith('ans')]
+        usable_samples = []
+        cdef int idx
+        pattern = re.compile(r"\d+")
+        for input_file in input_files:
+            idx = int(pattern.search(input_file).group(0))
+            for output_file in output_files:
+                if idx == int(pattern.search(output_file).group(0)):
+                    usable_samples.append((idx, input_file, output_file))
+                    break
+        usable_samples = sorted(usable_samples, key=lambda x: x[0])
+        # run test
+        cdef unsigned long long start_time
+        cdef unsigned long long taken
+        actual = []
+        expected = []
+        diff = []
+        cdef bool_t is_ac
+        cdef bytes raw_output
+
+        subprocess.check_call(shlex.split(self.pre_script))
+        for sample in usable_samples:
+            is_ac = True
+            actual = []
+            expected = []
+            diff = []
+            try:
+                with open(sample[2], 'r') as f:
+                    expected = [l.strip(" \n") for l in f.readlines()]
+                with open(sample[1], 'rb') as f:
+                    raw_input = f.read()
+                p = Popen([self.script, '-'], stdin=PIPE, stdout=PIPE, stderr=PIPE)
+                start_time = time.time_ns()
+                raw_output, stderr_data = p.communicate(raw_input)
+                taken = time.time_ns() - start_time
+                stderr_data_decoded = stderr_data.decode('utf-8')
+                if stderr_data_decoded:
+                    print(stderr_data_decoded, file=sys.stderr)
+                actual = raw_output.decode('utf-8').split('\n')
+                make_list_equal(actual, expected)
+                assert len(actual) == len(expected), \
+                    'Internal Error: Actual and expect list dont have the same length'
+                diff = ''
+
+
+                for i in range(len(expected)):
+                    ith_line_exp = expected[i].strip().split(' ')
+                    ith_line_actual = actual[i].strip().split(' ')
+                    make_list_equal(ith_line_exp, ith_line_actual)
+                    assert len(ith_line_exp) == len(ith_line_actual), \
+                    'Internal Error: Actual and expect ith_line dont have the same length'
+                    current_diff = []
+                    for j in range(len(ith_line_exp)):
+                        if ith_line_exp[j] == ith_line_actual[j]:
+                            current_diff.append(ith_line_exp[j])
+                        else:
+                            current_diff.append(f"{_color_red(strike(ith_line_actual[j]))}{_color_green(ith_line_exp[j])}")
+                            is_ac = False
+
+                    diff += f"{' '.join(current_diff)}\n"
+                if is_ac:
+                    print(_color_green(f'Test case {sample[0]}: {"Accepted".ljust(13, " ")} .... {taken // (10 ** 6)} ms'))
+                else:
+                    print(_color_red(f'Test case {sample[0]}: {"Wrong Answer".ljust(13, " ")} .... {taken // (10 ** 6)} ms'))
+                    print('Diff: ')
+                    print(diff)
+
+            except Exception as e:
+                print(_color_red(f'Test case {sample[0]}: Runtime Error {e}'))
+        subprocess.check_call(shlex.split(self.post_script))
+
 
 cdef class Submit(Action):
     cdef str ac_icon
     cdef str rj_icon
     cdef str sk_icon
 
+    cdef str file_name
+    cdef str lang
+
     def __cinit__(self):
         self.ac_icon = ':heavy_check_mark:'
         self.rj_icon = ':heavy_multiplication_x:'
         self.sk_icon = ':white_medium_square:'
+        
 
-    cdef bool_t is_finished(self, result, str status):    
+    cdef bool_t is_finished(self, object output_lines, result, str status):    
         cdef int tot_res = len(result)
         cdef int ac_ct = 0
         cdef bool_t is_ac = True
@@ -215,17 +435,20 @@ cdef class Submit(Action):
         else:
             finished = ac_ct == tot_res
 
-        if not finished:
+        if status == 'Compile Error':
+            status = _color_red(status)
+        elif not finished:
             status = _color_cyan(status)
-        elif is_ac:
-            status = _color_green(status)
         else:
             if status == 'Running': # status text not updated, lets try again
                 return False
-            status = _color_red(status)
-
-        sys.stdout.write(f"Submission result: {status.center(20)} |  Test case status: {emoji.emojize(' '.join(res))}\r")
-        sys.stdout.flush()
+            if is_ac:
+                status = _color_green(status)
+            else:
+                status = _color_red(status)
+                
+        output_lines['Submission result'] = f'{status}'
+        output_lines['Test cases status'] = f"{emoji.emojize(' '.join(res))}"
         return finished
         
 
@@ -241,35 +464,70 @@ cdef class Submit(Action):
         status_ret = soup.find('td', class_='status middle').find('span')
         cdef int time_out = 20
         cdef float cur_time = 0
-        while cur_time < time_out and not self.is_finished(submission_ret, status_ret.text):
-            self.login()
-            page = requests.get(submission_url_ret, cookies=self.cookies, headers=_HEADERS)
-            soup = BeautifulSoup(page.content, 'html.parser')
-            submission_data = soup.find('div', class_='testcases')
-            tc_up = submission_data != None
-            submission_ret = submission_data.find_all('span')
-            status_ret = soup.find('td', class_='status middle').find('span')
-            time.sleep(0.4)
-            cur_time += 0.4
-        print('\n', flush=True)
+        with output(output_type='dict') as output_lines:
+            while cur_time < time_out and not self.is_finished(output_lines, submission_ret, status_ret.text):
+                self.login()
+                page = requests.get(submission_url_ret, cookies=self.cookies, headers=_HEADERS)
+                soup = BeautifulSoup(page.content, 'html.parser')
+                submission_data = soup.find('div', class_='testcases')
+                tc_up = submission_data != None
+                submission_ret = submission_data.find_all('span')
+                status_ret = soup.find('td', class_='status middle').find('span')
+                time.sleep(0.4)
+                cur_time += 0.4
 
-    
-        
 
+    cdef detect_file_name(self):
+        cdef object acceptable_file_ext = {}
+        for k, v in map_template_to_plang.items():
+            acceptable_file_ext[map_template_to_plang[k].extension] = map_template_to_plang[k]
+        files = [f for f in os.listdir('.') if os.path.isfile(f)]
+        runnable_files = []
+        for f in files:
+            parts = f.split('.')
+            if len(parts) <= 1:
+                continue
+            if  parts[1] in acceptable_file_ext:
+                runnable_files.append((parts[0], f, parts[1]))
+
+        cdef str alias
+        if len(runnable_files) == 0:
+            raise RuntimeError('Not executable code file detected')
+
+        cdef int opt = 0
+        cdef int res_int
+        cdef str res
+        if len(runnable_files) > 1:
+            print('Multiple code files detected in the folder. Which one would you like to test')
+            for i in range(len(runnable_files)):
+                print(f'{i}: {runnable_files[i][1]}')
+            res = input()
+            opt = int(res)
+            assert 0 <= opt < len(runnable_files), 'Invalid option chosen'
+
+        self.file_name = os.path.abspath(runnable_files[opt][1]) 
+        if runnable_files[opt][2] == 'py':
+            res = input('Which python version you want to submit, 2 or 3?\n')
+            res_int = int(res)
+            assert 2 <= res_int <= 3, "Invalid option"
+            self.lang = f'Python {res_int}'
+        else:
+            self.lang = acceptable_file_ext[runnable_files[opt][2]].full_name
+            
     cdef _act(self):
+        self.detect_file_name()
         cdef str problem_id = os.path.basename(os.getcwd())
-        cdef str filename = f'{problem_id}.cpp'
         data = {'submit': 'true',
             'submit_ctr': 2,
-            'language': 'C++',
+            'language': self.lang,
             'mainclass': '',
             'problem': problem_id,
             'tag': '',
             'script': 'true'}
         files = []
-        with open(filename) as sub_file:
+        with open(self.file_name) as sub_file:
             files.append(('sub_file[]',
-                              (os.path.basename(filename),
+                              (os.path.basename(self.file_name),
                                sub_file.read(),
                                'application/octet-stream')))
         cdef str submit_url = self.get_url('submissionurl', 'submit')
@@ -294,16 +552,128 @@ cdef class Submit(Action):
         self._render_result(submission_url_ret)
 
 
+cdef class Config(Action):
+    cdef add_template(self):
+        print(_color_green('Adapted from xalanq\'s cf tool'))
+        print('''
+Template will run 3 scripts in sequence when you run "kt test":
+    - before_script   (execute once)
+    - script          (execute the number of samples times)
+    - after_script    (execute once)
+You could set "before_script" or "after_script" to empty string, meaning not executing.
+You have to run your program in "script" with standard input/output (no need to redirect).
+
+You can insert some placeholders in your scripts. When execute a script,
+cf will replace all placeholders by following rules:
+
+$%path%$   Path to source file (Excluding $%full%$, e.g. "/home/user/")
+$%full%$   Full name of source file (e.g. "a.cpp")
+$%file%$   Name of source file (Excluding suffix, e.g. "a")
+$%rand%$   Random string with 8 character (including "a-z" "0-9")
+        ''')
+        cdef str question = 'Which template would you like to add:\n'
+        cdef object selectable_lang = {}
+        cdef int idx = 1
+        cdef object existed_templates = {}
+
+        with open(self.kt_config) as f:
+            existed_templates = json.load(f)
+
+        for template_type, lang in map_template_to_plang.items():
+            if template_type not in existed_templates:
+                question += f'{idx} ({lang.extension}): {lang.full_name}\n'
+                selectable_lang[idx] = (template_type, lang)
+                idx += 1
+
+        cdef str res = input(question)
+        cdef int ret = int(res)
+        assert 1 <= ret < idx, 'Invalid input'
+        cdef object options = {}
+        selected_lang = selectable_lang[ret][1]
+        options['path'] = ask_with_default('Template path', f'~/template.{selected_lang.extension}')
+        options['pre_script'] = ask_with_default('Pre-script', selected_lang.pre_script)
+        options['script'] = ask_with_default('Script', selected_lang.script)
+        options['post_script'] = ask_with_default('Post-script', selected_lang.post_script)
+        options['default'] = False if existed_templates else True
+
+        existed_templates[selected_lang.alias] = options
+        with open(self.kt_config, 'w') as kt_config:
+            json.dump(existed_templates, kt_config, indent=2)
+        print(_color_green('Yosh, your configuration has been saved'))
+
+
+    cdef remove_template(self):
+        cdef object existed_templates = {}
+
+        with open(self.kt_config) as f:
+            existed_templates = json.load(f)
+
+        print(f'Which template would you like to {_color_red("delete")} ? For eg cpp, cc, ...')
+        for k, v in existed_templates.items():
+            print(k)
+        cdef str res = input()
+
+        assert res in existed_templates, f'Invalid template chosen. Template {res} is not in ur config file'
+
+        cdef bool_t move_default = existed_templates[res]['default']
+        existed_templates.pop(res, None)
+        if existed_templates and move_default: # move default to the first key of template
+            existed_templates[next(iter(existed_templates))] = True
+        with open(self.kt_config, 'w') as kt_config:
+            json.dump(existed_templates, kt_config, indent=2)
+
+    cdef update_default(self):
+        cdef object existed_templates = {}
+
+        with open(self.kt_config) as f:
+            existed_templates = json.load(f)
+        print(f'Which template would you like to gen as {_color_cyan("default")} ? For eg cpp, cc, ...')
+        cdef str default_key = ''
+        for k, v in existed_templates.items():
+            print(f'{k} {_color_green("(default)") if v["default"] else ""}')
+            if v["default"]:
+                default_key = k
+
+        cdef str res = input()
+
+        assert res in existed_templates, f'Invalid template chosen. Template {res} is not in ur config file'
+        existed_templates[default_key]["default"] = False
+        existed_templates[res]["default"] = True
+        with open(self.kt_config, 'w') as kt_config:
+            json.dump(existed_templates, kt_config, indent=2)
+        print(_color_green('Yosh, your configuration has been saved'))
+
+    cdef _act(self):
+        cdef str question = """Select an option:
+1: Add a template
+2: Remove a template
+3: Select a default template
+"""
+        cdef str res = input(question)
+        cdef int opt = int(res)
+        if opt == 1:
+            self.add_template()
+        elif opt == 2:
+            self.remove_template()
+        elif opt == 3:
+            self.update_default()
+        else:
+            raise ValueError('Invalid option')
+
+
+
 cdef object map_key_to_class = {
     'gen': Gen,
     'test': Test,
-    'submit': Submit
+    'submit': Submit,
+    'config': Config
 } 
+
 cdef Action _arg_parse_wrapper(args: List[str]):
     if len(args) == 0:
         raise ValueError(f'No command provided to kt')
     if args[0] not in map_key_to_class:
-        raise ValueError(f'first argument should be one of {map_key_to_class.keys()}')
+        raise ValueError(f'First argument should be one of {list(map_key_to_class.keys())}')
     return map_key_to_class[args[0]](*args[1:])
 
 
