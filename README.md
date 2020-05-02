@@ -1,11 +1,10 @@
-# * kt * Kattis command line helper
+# <img src="img/icon.png" width="50" height="30"> Kattis unofficial command line helper
 ![pypi](https://img.shields.io/pypi/v/kttool.svg)
-![download](https://img.shields.io/pypi/d/kttool.svg)
 ![wheel](https://img.shields.io/pypi/wheel/kttool.svg)
 ![license](https://img.shields.io/pypi/l/kttool.svg)
 
 Inspired by (and works well with) xalanq's [codeforce tool](https://github.com/xalanq/cf-tool)
-
+<img src="img/kattis_icon.png">
 
 ## Sample usage
 
