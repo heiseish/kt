@@ -276,6 +276,7 @@ cdef class Test(Action):
     cdef str pre_script
     cdef str script
     cdef str post_script
+    cdef str lang
 
     cdef detect_file_name(self):
         cdef object existed_templates = {}
@@ -301,6 +302,7 @@ cdef class Test(Action):
         if len(runnable_files) == 1:
             self.file_name = runnable_files[0][0]
             alias = acceptable_file_ext[runnable_files[0][2]].alias
+            self.lang = acceptable_file_ext[runnable_files[0][2]].full_name
             self.pre_script = existed_templates.get(alias, {}).get('pre_script').replace('$%file%$', self.file_name)
             self.script = existed_templates.get(alias, {}).get('script').replace('$%file%$', self.file_name)
             self.post_script = existed_templates.get(alias, {}).get('post_script').replace('$%file%$', self.file_name)
@@ -314,6 +316,7 @@ cdef class Test(Action):
         assert 0 <= opt < len(runnable_files), 'Invalid option chosen'
         self.file_name = runnable_files[opt][0]
         alias = acceptable_file_ext[runnable_files[opt][2]].alias
+        self.lang = acceptable_file_ext[runnable_files[opt][2]].full_name
         self.pre_script = existed_templates.get(alias, {}).get('pre_script').replace('$%file%$', self.file_name)
         self.script = existed_templates.get(alias, {}).get('script').replace('$%file%$', self.file_name)
         self.post_script = existed_templates.get(alias, {}).get('post_script').replace('$%file%$', self.file_name)
@@ -350,6 +353,8 @@ cdef class Test(Action):
             string rhs
             string temp
 
+        print(f'Problem ID : {_color_cyan(os.path.basename(os.getcwd()))}')
+        print(f'Lanuage    : {self.lang}')
         subprocess.check_call(shlex.split(self.pre_script))
         for sample in usable_samples:
             is_ac = True
@@ -454,6 +459,8 @@ cdef class Submit(Action):
         else:
             finished = ac_ct == tot_res
 
+        if status == 'Compiling':
+            return False
         if status == 'Compile Error':
             status = _color_red(status)
         elif not finished:
@@ -465,7 +472,10 @@ cdef class Submit(Action):
                 status = _color_green(status)
             else:
                 status = _color_red(status)
-                
+
+        output_lines['Job              '] = 'Kattis submission'
+        output_lines['Current time     '] = f"{time.strftime('%l:%M%p %Z on %b %d, %Y')}"
+        output_lines['Language         '] = f'{self.lang}' 
         output_lines['Submission result'] = f'{status}'
         output_lines['Test cases status'] = f"{emoji.emojize(' '.join(res))}"
         return finished
