@@ -4,6 +4,7 @@
 ![license](https://img.shields.io/pypi/l/kttool.svg)
 
 Inspired by (and works well with) xalanq's [codeforce tool](https://github.com/xalanq/cf-tool)
+
 <img src="img/kattis_icon.png">
 
 ## Sample usage
@@ -60,6 +61,5 @@ pip install --upgrade kttool
 - https://github.com/Kattis/kattis-cli
 - https://github.com/xalanq/cf-tool
 
-***
 # License
 [MIT License](LICENSE)

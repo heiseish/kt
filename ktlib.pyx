@@ -28,7 +28,8 @@ else:
 
 __all__ = [
     'arg_parse',
-    'color_red'
+    'color_red',
+    'color_green'
 ]
 
 PLanguage = namedtuple('ProgrammingLanguage', 
@@ -117,11 +118,11 @@ cdef str ask_with_default(str qu, str default_val=''):
         return default_val
     return ret
 
-cdef void make_list_equal(list1, list2, str pad_element=''):
-    if len(list1) < len(list2):
-        list1 += [ pad_element ] * (len(list2) - len(list1))
-    elif len(list1) > len(list2):
-        list2 += [ pad_element ] * (len(list1) - len(list2))
+cdef void make_list_equal(vector[string]& list1, vector[string]& list2, string pad_element = b''):
+    while list1.size() < list2.size():
+        list1.push_back(pad_element)
+    while list2.size() < list1.size():
+        list2.push_back(pad_element)
 
 cdef class Action(object):
     cdef str config_path
@@ -169,7 +170,7 @@ cdef class Action(object):
         Your .kattisrc file appears corrupted. It must provide a token (or a
         KATTIS password).
         Please download a new .kattisrc file''')
-        print(f'Username: {username}')
+        print(f'Username: {_color_green(username)}')
 
 
     cdef login(self):
@@ -305,7 +306,7 @@ cdef class Test(Action):
             self.post_script = existed_templates.get(alias, {}).get('post_script').replace('$%file%$', self.file_name)
             return
 
-        print('Multiple code files detected in the folder. Which one would you like to test')
+        print(_color_cyan('Choose a file to run'))
         for i in range(len(runnable_files)):
             print(f'{i}: {runnable_files[i][1]}')
         cdef str res = input()
@@ -320,7 +321,6 @@ cdef class Test(Action):
 
     cdef _act(self):
         self.detect_file_name()
-        print(f'Runnable code is {self.file_name}')
         input_files = [f for f in os.listdir('.') if os.path.isfile(f) and f.startswith('in')]
         output_files = [f for f in os.listdir('.') if os.path.isfile(f) and f.startswith('ans')]
         usable_samples = []
@@ -334,60 +334,79 @@ cdef class Test(Action):
                     break
         usable_samples = sorted(usable_samples, key=lambda x: x[0])
         # run test
-        cdef unsigned long long start_time
-        cdef unsigned long long taken
-        actual = []
-        expected = []
-        diff = []
-        cdef bool_t is_ac
-        cdef bytes raw_output
+        cdef:
+            float start_time
+            float taken
+            vector[string] actual
+            vector[string] expected
+            vector[string] diff
+            vector[string] ith_line_exp
+            vector[string] ith_line_actual
+            string current_diff
+            bool_t is_ac
+            bytes raw_output
+            str stderr_data_decoded
+            string lhs
+            string rhs
+            string temp
 
         subprocess.check_call(shlex.split(self.pre_script))
         for sample in usable_samples:
             is_ac = True
-            actual = []
-            expected = []
-            diff = []
+            actual.clear()
+            expected.clear()
+            diff.clear()
             try:
                 with open(sample[2], 'r') as f:
-                    expected = [l.strip(" \n") for l in f.readlines()]
+                    expected = [l.strip(" \n").encode('utf-8') for l in f.readlines()]
                 with open(sample[1], 'rb') as f:
                     raw_input = f.read()
+
                 p = Popen([self.script, '-'], stdin=PIPE, stdout=PIPE, stderr=PIPE)
-                start_time = time.time_ns()
+                start_time = time.perf_counter()
                 raw_output, stderr_data = p.communicate(raw_input)
-                taken = time.time_ns() - start_time
+                taken = time.perf_counter()  - start_time
+
                 stderr_data_decoded = stderr_data.decode('utf-8')
                 if stderr_data_decoded:
                     print(stderr_data_decoded, file=sys.stderr)
-                actual = raw_output.decode('utf-8').split('\n')
+
+                actual = [z.strip(" \n").encode('utf-8') for z in raw_output.decode('utf-8').split('\n')]
+
                 make_list_equal(actual, expected)
-                assert len(actual) == len(expected), \
+
+                assert actual.size() == expected.size(), \
                     'Internal Error: Actual and expect list dont have the same length'
-                diff = ''
-
-
+                diff.clear()
                 for i in range(len(expected)):
-                    ith_line_exp = expected[i].strip().split(' ')
-                    ith_line_actual = actual[i].strip().split(' ')
-                    make_list_equal(ith_line_exp, ith_line_actual)
-                    assert len(ith_line_exp) == len(ith_line_actual), \
-                    'Internal Error: Actual and expect ith_line dont have the same length'
-                    current_diff = []
-                    for j in range(len(ith_line_exp)):
-                        if ith_line_exp[j] == ith_line_actual[j]:
-                            current_diff.append(ith_line_exp[j])
-                        else:
-                            current_diff.append(f"{_color_red(strike(ith_line_actual[j]))}{_color_green(ith_line_exp[j])}")
-                            is_ac = False
+                    ith_line_exp = [z.encode('utf-8') for z in expected[i].decode('utf-8').split(' ')]
+                    ith_line_actual = [z.encode('utf-8') for z in actual[i].decode('utf-8').split(' ')]
 
-                    diff += f"{' '.join(current_diff)}\n"
+                    make_list_equal(ith_line_exp, ith_line_actual)
+                    assert ith_line_exp.size() == ith_line_actual.size(), \
+                    'Internal Error: Actual and expect ith_line dont have the same length'
+                    current_diff.clear()
+                    for j in range(len(ith_line_exp)):
+                        lhs = ith_line_exp[j]
+                        rhs = ith_line_actual[j]
+                        temp = f"{_color_red(strike(ith_line_actual[j].decode()))}{_color_green(ith_line_exp[j].decode())} ".encode('utf-8')
+                        if lhs == rhs:
+                            current_diff += lhs
+                            current_diff.push_back(b' ')
+                        else:
+                            current_diff += temp
+                            is_ac = False
+                    diff.push_back(current_diff)
                 if is_ac:
-                    print(_color_green(f'Test case {sample[0]}: {"Accepted".ljust(13, " ")} .... {taken // (10 ** 6)} ms'))
+                    print(_color_green(f'Test Case {sample[0]}: {"Accepted".ljust(13, " ")} ... {taken:.3f} s'))
                 else:
-                    print(_color_red(f'Test case {sample[0]}: {"Wrong Answer".ljust(13, " ")} .... {taken // (10 ** 6)} ms'))
-                    print('Diff: ')
-                    print(diff)
+                    print(_color_red(f'Test Case {sample[0]}: {"Wrong Answer".ljust(13, " ")} ... {taken:.3f} s'))
+                    print(_color_cyan('Input: '))
+                    print(raw_input.decode())
+                    print('-----------------------')
+                    print(_color_cyan('Diff: '))
+                    for i in range(diff.size()):
+                        print(diff[i].decode())
 
             except Exception as e:
                 print(_color_red(f'Test case {sample[0]}: Runtime Error {e}'))
@@ -441,8 +460,8 @@ cdef class Submit(Action):
             status = _color_cyan(status)
         else:
             if status == 'Running': # status text not updated, lets try again
-                return False
-            if is_ac:
+                finished = False
+            elif is_ac:
                 status = _color_green(status)
             else:
                 status = _color_red(status)
@@ -498,7 +517,7 @@ cdef class Submit(Action):
         cdef int res_int
         cdef str res
         if len(runnable_files) > 1:
-            print('Multiple code files detected in the folder. Which one would you like to test')
+            print(_color_cyan('Choose a file to run'))
             for i in range(len(runnable_files)):
                 print(f'{i}: {runnable_files[i][1]}')
             res = input()
@@ -679,6 +698,9 @@ cdef Action _arg_parse_wrapper(args: List[str]):
 
 def arg_parse(args: List[str]):
     return _arg_parse_wrapper(args)
+
+def color_green(str text):
+    return _color_green(text)
 
 def color_red(str text):
     return _color_red(text)
