@@ -2137,7 +2137,7 @@ static const char __pyx_k_Compiling[] = "Compiling";
 static const char __pyx_k_PLanguage[] = "PLanguage";
 static const char __pyx_k_RESET_SEQ[] = "RESET_SEQ";
 static const char __pyx_k_Test_Case[] = "Test Case #";
-static const char __pyx_k_Test_case[] = "Test case ";
+static const char __pyx_k_Test_case[] = "Test case #";
 static const char __pyx_k_TypeError[] = "TypeError";
 static const char __pyx_k_arg_parse[] = "arg_parse";
 static const char __pyx_k_color_red[] = "color_red";
@@ -11627,7 +11627,7 @@ static PyObject *__pyx_f_5ktlib_4Test__act(struct __pyx_obj_5ktlib_Test *__pyx_v
  *                         print(diff[i].decode())
  * 
  *             except Exception as e:             # <<<<<<<<<<<<<<
- *                 print(_color_red(f'Test case {sample[0]}: Runtime Error {e}'))
+ *                 print(_color_red(f'Test case #{sample[0]}: Runtime Error {e}'))
  *         if self.post_script:
  */
       __pyx_t_10 = __Pyx_PyErr_ExceptionMatches(((PyObject *)(&((PyTypeObject*)PyExc_Exception)[0])));
@@ -11644,7 +11644,7 @@ static PyObject *__pyx_f_5ktlib_4Test__act(struct __pyx_obj_5ktlib_Test *__pyx_v
           /* "ktlib.pyx":427
  * 
  *             except Exception as e:
- *                 print(_color_red(f'Test case {sample[0]}: Runtime Error {e}'))             # <<<<<<<<<<<<<<
+ *                 print(_color_red(f'Test case #{sample[0]}: Runtime Error {e}'))             # <<<<<<<<<<<<<<
  *         if self.post_script:
  *             subprocess.check_call(shlex.split(self.post_script))
  */
@@ -11653,7 +11653,7 @@ static PyObject *__pyx_f_5ktlib_4Test__act(struct __pyx_obj_5ktlib_Test *__pyx_v
           __pyx_t_11 = 0;
           __pyx_t_33 = 127;
           __Pyx_INCREF(__pyx_kp_u_Test_case);
-          __pyx_t_11 += 10;
+          __pyx_t_11 += 11;
           __Pyx_GIVEREF(__pyx_kp_u_Test_case);
           PyTuple_SET_ITEM(__pyx_t_8, 0, __pyx_kp_u_Test_case);
           __pyx_t_1 = __Pyx_GetItemInt(__pyx_v_sample, 0, long, 1, __Pyx_PyInt_From_long, 0, 0, 1); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 427, __pyx_L114_error)
@@ -11693,7 +11693,7 @@ static PyObject *__pyx_f_5ktlib_4Test__act(struct __pyx_obj_5ktlib_Test *__pyx_v
  *                         print(diff[i].decode())
  * 
  *             except Exception as e:             # <<<<<<<<<<<<<<
- *                 print(_color_red(f'Test case {sample[0]}: Runtime Error {e}'))
+ *                 print(_color_red(f'Test case #{sample[0]}: Runtime Error {e}'))
  *         if self.post_script:
  */
         /*finally:*/ {
@@ -11779,7 +11779,7 @@ static PyObject *__pyx_f_5ktlib_4Test__act(struct __pyx_obj_5ktlib_Test *__pyx_v
 
   /* "ktlib.pyx":428
  *             except Exception as e:
- *                 print(_color_red(f'Test case {sample[0]}: Runtime Error {e}'))
+ *                 print(_color_red(f'Test case #{sample[0]}: Runtime Error {e}'))
  *         if self.post_script:             # <<<<<<<<<<<<<<
  *             subprocess.check_call(shlex.split(self.post_script))
  * 
@@ -11788,7 +11788,7 @@ static PyObject *__pyx_f_5ktlib_4Test__act(struct __pyx_obj_5ktlib_Test *__pyx_v
   if (__pyx_t_7) {
 
     /* "ktlib.pyx":429
- *                 print(_color_red(f'Test case {sample[0]}: Runtime Error {e}'))
+ *                 print(_color_red(f'Test case #{sample[0]}: Runtime Error {e}'))
  *         if self.post_script:
  *             subprocess.check_call(shlex.split(self.post_script))             # <<<<<<<<<<<<<<
  * 
@@ -11839,7 +11839,7 @@ static PyObject *__pyx_f_5ktlib_4Test__act(struct __pyx_obj_5ktlib_Test *__pyx_v
 
     /* "ktlib.pyx":428
  *             except Exception as e:
- *                 print(_color_red(f'Test case {sample[0]}: Runtime Error {e}'))
+ *                 print(_color_red(f'Test case #{sample[0]}: Runtime Error {e}'))
  *         if self.post_script:             # <<<<<<<<<<<<<<
  *             subprocess.check_call(shlex.split(self.post_script))
  * 

@@ -1,4 +1,4 @@
-# <img src="img/icon.png" width="50" height="30"> Kattis unofficial command line helper
+# <img src="https://raw.githubusercontent.com/heiseish/kt/master/img/icon.png" width="50" height="30"> Kattis unofficial command line helper
 ![pypi](https://img.shields.io/pypi/v/kttool.svg)
 ![wheel](https://img.shields.io/pypi/wheel/kttool.svg)
 ![license](https://img.shields.io/pypi/l/kttool.svg)
@@ -40,6 +40,7 @@ If you've set up your config properly, you should be ready to test whether your 
 kt test
 ```
 And observe the difference ..
+
 <img src="https://raw.githubusercontent.com/heiseish/kt/master/img/diff.png">
 
 

@@ -424,7 +424,7 @@ cdef class Test(Action):
                         print(diff[i].decode())
 
             except Exception as e:
-                print(_color_red(f'Test case {sample[0]}: Runtime Error {e}'))
+                print(_color_red(f'Test case #{sample[0]}: Runtime Error {e}'))
         if self.post_script:
             subprocess.check_call(shlex.split(self.post_script))
 
