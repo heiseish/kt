@@ -56,6 +56,9 @@ You should be able to see how many test cases your code has passed so far
 
 ## Installation
 ```bash
+# Below step is for linux only, skip this if gcc, g++, python3-dev etc have been installed
+sudo apt-get install build-essential python3-dev
+
 pip install --upgrade kttool
 ```
 
