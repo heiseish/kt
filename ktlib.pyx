@@ -20,6 +20,8 @@ import subprocess
 from subprocess import Popen, PIPE
 import json
 import shlex
+from resource import *
+import psutil
 
 if sys.version_info[0] >= 3:
     import configparser
@@ -310,7 +312,7 @@ cdef class Test(Action):
 
         print(_color_cyan('Choose a file to run'))
         for i in range(len(runnable_files)):
-            print(f'{i}: {runnable_files[i][1]}')
+            print(f'  {i}: {runnable_files[i][1]}')
         cdef str res = input()
         cdef int opt = int(res)
         assert 0 <= opt < len(runnable_files), 'Invalid option chosen'
@@ -352,10 +354,16 @@ cdef class Test(Action):
             string lhs
             string rhs
             string temp
+            float mem_used
+            long rusage_denom = 1024
+
+        if sys.platform == 'darwin':
+            rusage_denom = rusage_denom * rusage_denom
 
         print(f'Problem ID : {_color_cyan(os.path.basename(os.getcwd()))}')
         print(f'Lanuage    : {self.lang}')
-        subprocess.check_call(shlex.split(self.pre_script))
+        if self.pre_script:
+            subprocess.check_call(shlex.split(self.pre_script))
         for sample in usable_samples:
             is_ac = True
             actual.clear()
@@ -367,7 +375,10 @@ cdef class Test(Action):
                 with open(sample[1], 'rb') as f:
                     raw_input = f.read()
 
-                p = Popen([self.script, '-'], stdin=PIPE, stdout=PIPE, stderr=PIPE)
+                p = Popen([self.script, '-'], stdin=PIPE, stdout=PIPE, stderr=PIPE, shell=True, 
+                    preexec_fn=os.setsid)
+                proc = psutil.Process(p.pid)
+                mem_used = proc.memory_info().rss / rusage_denom
                 start_time = time.perf_counter()
                 raw_output, stderr_data = p.communicate(raw_input)
                 taken = time.perf_counter()  - start_time
@@ -403,19 +414,19 @@ cdef class Test(Action):
                             is_ac = False
                     diff.push_back(current_diff)
                 if is_ac:
-                    print(_color_green(f'Test Case {sample[0]}: {"Accepted".ljust(13, " ")} ... {taken:.3f} s'))
+                    print(_color_green(f'Test Case #{sample[0]}: {"Accepted".ljust(13, " ")} ... {taken:.3f} s   {mem_used:.2f} Mb'))
                 else:
-                    print(_color_red(f'Test Case {sample[0]}: {"Wrong Answer".ljust(13, " ")} ... {taken:.3f} s'))
-                    print(_color_cyan('Input: '))
+                    print(_color_red(f'Test Case #{sample[0]}: {"Wrong Answer".ljust(13, " ")} ... {taken:.3f} s   {mem_used:.2f} Mb'))
+                    print(_color_cyan('--- Input ---'))
                     print(raw_input.decode())
-                    print('-----------------------')
-                    print(_color_cyan('Diff: '))
+                    print(_color_cyan('--- Diff ---'))
                     for i in range(diff.size()):
                         print(diff[i].decode())
 
             except Exception as e:
                 print(_color_red(f'Test case {sample[0]}: Runtime Error {e}'))
-        subprocess.check_call(shlex.split(self.post_script))
+        if self.post_script:
+            subprocess.check_call(shlex.split(self.post_script))
 
 
 cdef class Submit(Action):
@@ -529,7 +540,7 @@ cdef class Submit(Action):
         if len(runnable_files) > 1:
             print(_color_cyan('Choose a file to run'))
             for i in range(len(runnable_files)):
-                print(f'{i}: {runnable_files[i][1]}')
+                print(f'  {i}: {runnable_files[i][1]}')
             res = input()
             opt = int(res)
             assert 0 <= opt < len(runnable_files), 'Invalid option chosen'
@@ -673,8 +684,8 @@ $%rand%$   Random string with 8 character (including "a-z" "0-9")
         print(_color_green('Yosh, your configuration has been saved'))
 
     cdef _act(self):
-        cdef str question = """Select an option:
-1: Add a template
+        cdef str question = _color_cyan('Select an option:\n')
+        question += """1: Add a template
 2: Remove a template
 3: Select a default template
 """

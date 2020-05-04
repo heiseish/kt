@@ -2,10 +2,11 @@
 ![pypi](https://img.shields.io/pypi/v/kttool.svg)
 ![wheel](https://img.shields.io/pypi/wheel/kttool.svg)
 ![license](https://img.shields.io/pypi/l/kttool.svg)
+![download](https://static.pepy.tech/badge/kttool)
 
 Inspired by (and works well with) xalanq's [codeforce tool](https://github.com/xalanq/cf-tool)
 
-<img src="img/kattis_icon.png">
+<img src="https://raw.githubusercontent.com/heiseish/kt/master/img/kattis_icon.png">
 
 ## Sample usage
 
@@ -15,7 +16,7 @@ First and foremost, [download your kattisrc file](https://open.kattis.com/downlo
 kt config
 ```
 to configure your code template. This will allow the tool to quickly generate code template for your problem.
-<img src="img/config.png">
+<img src="https://raw.githubusercontent.com/heiseish/kt/master/img/config.png">
 
 
 
@@ -29,7 +30,7 @@ For example, if you want to attempt problem [Distinctive Character](https://open
 kt gen distinctivecharacter
 ```
 You should be able to see 2 set of sample inputs/outputs generated in a folder called `distinctivecharacter`
-<img src="img/gen.png">
+<img src="https://raw.githubusercontent.com/heiseish/kt/master/img/gen.png">
 
 After that, you can `cd` into the folder and start working on the problem. 
 
@@ -39,7 +40,7 @@ If you've set up your config properly, you should be ready to test whether your 
 kt test
 ```
 And observe the difference ..
-<img src="img/diff.png">
+<img src="https://raw.githubusercontent.com/heiseish/kt/master/img/diff.png">
 
 
 ### Submit file and check result on the terminal
@@ -49,7 +50,7 @@ From your current problem folder
 kt submit
 ```
 You should be able to see how many test cases your code has passed so far
-<img src="img/ac.png">
+<img src="https://raw.githubusercontent.com/heiseish/kt/master/img/ac.png">
 
 
 ## Installation
