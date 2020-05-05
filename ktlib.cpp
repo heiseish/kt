@@ -17441,9 +17441,9 @@ static struct __pyx_obj_5ktlib_Action *__pyx_f_5ktlib__arg_parse_wrapper(PyObjec
   return __pyx_r;
 }
 
-/* "ktlib.pyx":863
+/* "ktlib.pyx":865
  * 
- * 
+ * # --------------- Python wrapper main funcion -------------------------
  * def arg_parse(args: List[str]):             # <<<<<<<<<<<<<<
  *     return _arg_parse_wrapper(args)
  * 
@@ -17469,23 +17469,23 @@ static PyObject *__pyx_pf_5ktlib_2arg_parse(CYTHON_UNUSED PyObject *__pyx_self, 
   PyObject *__pyx_t_1 = NULL;
   __Pyx_RefNannySetupContext("arg_parse", 0);
 
-  /* "ktlib.pyx":864
- * 
+  /* "ktlib.pyx":866
+ * # --------------- Python wrapper main funcion -------------------------
  * def arg_parse(args: List[str]):
  *     return _arg_parse_wrapper(args)             # <<<<<<<<<<<<<<
  * 
  * def color_green(str text):
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = ((PyObject *)__pyx_f_5ktlib__arg_parse_wrapper(__pyx_v_args)); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 864, __pyx_L1_error)
+  __pyx_t_1 = ((PyObject *)__pyx_f_5ktlib__arg_parse_wrapper(__pyx_v_args)); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 866, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
   goto __pyx_L0;
 
-  /* "ktlib.pyx":863
+  /* "ktlib.pyx":865
  * 
- * 
+ * # --------------- Python wrapper main funcion -------------------------
  * def arg_parse(args: List[str]):             # <<<<<<<<<<<<<<
  *     return _arg_parse_wrapper(args)
  * 
@@ -17502,7 +17502,7 @@ static PyObject *__pyx_pf_5ktlib_2arg_parse(CYTHON_UNUSED PyObject *__pyx_self, 
   return __pyx_r;
 }
 
-/* "ktlib.pyx":866
+/* "ktlib.pyx":868
  *     return _arg_parse_wrapper(args)
  * 
  * def color_green(str text):             # <<<<<<<<<<<<<<
@@ -17517,7 +17517,7 @@ static PyObject *__pyx_pw_5ktlib_5color_green(PyObject *__pyx_self, PyObject *__
   PyObject *__pyx_r = 0;
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("color_green (wrapper)", 0);
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_text), (&PyUnicode_Type), 1, "text", 1))) __PYX_ERR(0, 866, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_text), (&PyUnicode_Type), 1, "text", 1))) __PYX_ERR(0, 868, __pyx_L1_error)
   __pyx_r = __pyx_pf_5ktlib_4color_green(__pyx_self, ((PyObject*)__pyx_v_text));
 
   /* function exit code */
@@ -17535,7 +17535,7 @@ static PyObject *__pyx_pf_5ktlib_4color_green(CYTHON_UNUSED PyObject *__pyx_self
   PyObject *__pyx_t_1 = NULL;
   __Pyx_RefNannySetupContext("color_green", 0);
 
-  /* "ktlib.pyx":867
+  /* "ktlib.pyx":869
  * 
  * def color_green(str text):
  *     return _color_green(text)             # <<<<<<<<<<<<<<
@@ -17543,13 +17543,13 @@ static PyObject *__pyx_pf_5ktlib_4color_green(CYTHON_UNUSED PyObject *__pyx_self
  * def color_red(str text):
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __pyx_f_5ktlib__color_green(__pyx_v_text); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 867, __pyx_L1_error)
+  __pyx_t_1 = __pyx_f_5ktlib__color_green(__pyx_v_text); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 869, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
   goto __pyx_L0;
 
-  /* "ktlib.pyx":866
+  /* "ktlib.pyx":868
  *     return _arg_parse_wrapper(args)
  * 
  * def color_green(str text):             # <<<<<<<<<<<<<<
@@ -17568,7 +17568,7 @@ static PyObject *__pyx_pf_5ktlib_4color_green(CYTHON_UNUSED PyObject *__pyx_self
   return __pyx_r;
 }
 
-/* "ktlib.pyx":869
+/* "ktlib.pyx":871
  *     return _color_green(text)
  * 
  * def color_red(str text):             # <<<<<<<<<<<<<<
@@ -17582,7 +17582,7 @@ static PyObject *__pyx_pw_5ktlib_7color_red(PyObject *__pyx_self, PyObject *__py
   PyObject *__pyx_r = 0;
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("color_red (wrapper)", 0);
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_text), (&PyUnicode_Type), 1, "text", 1))) __PYX_ERR(0, 869, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_text), (&PyUnicode_Type), 1, "text", 1))) __PYX_ERR(0, 871, __pyx_L1_error)
   __pyx_r = __pyx_pf_5ktlib_6color_red(__pyx_self, ((PyObject*)__pyx_v_text));
 
   /* function exit code */
@@ -17600,19 +17600,19 @@ static PyObject *__pyx_pf_5ktlib_6color_red(CYTHON_UNUSED PyObject *__pyx_self, 
   PyObject *__pyx_t_1 = NULL;
   __Pyx_RefNannySetupContext("color_red", 0);
 
-  /* "ktlib.pyx":870
+  /* "ktlib.pyx":872
  * 
  * def color_red(str text):
  *     return _color_red(text)             # <<<<<<<<<<<<<<
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __pyx_f_5ktlib__color_red(__pyx_v_text); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 870, __pyx_L1_error)
+  __pyx_t_1 = __pyx_f_5ktlib__color_red(__pyx_v_text); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 872, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
   goto __pyx_L0;
 
-  /* "ktlib.pyx":869
+  /* "ktlib.pyx":871
  *     return _color_green(text)
  * 
  * def color_red(str text):             # <<<<<<<<<<<<<<
@@ -20264,40 +20264,40 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
   __Pyx_GIVEREF(__pyx_tuple__57);
   __pyx_codeobj__58 = (PyObject*)__Pyx_PyCode_New(1, 0, 1, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__57, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_ktlib_pyx, __pyx_n_s_write_samples, 282, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__58)) __PYX_ERR(0, 282, __pyx_L1_error)
 
-  /* "ktlib.pyx":863
+  /* "ktlib.pyx":865
  * 
- * 
+ * # --------------- Python wrapper main funcion -------------------------
  * def arg_parse(args: List[str]):             # <<<<<<<<<<<<<<
  *     return _arg_parse_wrapper(args)
  * 
  */
-  __pyx_tuple__59 = PyTuple_Pack(1, __pyx_n_s_args); if (unlikely(!__pyx_tuple__59)) __PYX_ERR(0, 863, __pyx_L1_error)
+  __pyx_tuple__59 = PyTuple_Pack(1, __pyx_n_s_args); if (unlikely(!__pyx_tuple__59)) __PYX_ERR(0, 865, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__59);
   __Pyx_GIVEREF(__pyx_tuple__59);
-  __pyx_codeobj__60 = (PyObject*)__Pyx_PyCode_New(1, 0, 1, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__59, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_ktlib_pyx, __pyx_n_s_arg_parse, 863, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__60)) __PYX_ERR(0, 863, __pyx_L1_error)
+  __pyx_codeobj__60 = (PyObject*)__Pyx_PyCode_New(1, 0, 1, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__59, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_ktlib_pyx, __pyx_n_s_arg_parse, 865, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__60)) __PYX_ERR(0, 865, __pyx_L1_error)
 
-  /* "ktlib.pyx":866
+  /* "ktlib.pyx":868
  *     return _arg_parse_wrapper(args)
  * 
  * def color_green(str text):             # <<<<<<<<<<<<<<
  *     return _color_green(text)
  * 
  */
-  __pyx_tuple__61 = PyTuple_Pack(1, __pyx_n_s_text); if (unlikely(!__pyx_tuple__61)) __PYX_ERR(0, 866, __pyx_L1_error)
+  __pyx_tuple__61 = PyTuple_Pack(1, __pyx_n_s_text); if (unlikely(!__pyx_tuple__61)) __PYX_ERR(0, 868, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__61);
   __Pyx_GIVEREF(__pyx_tuple__61);
-  __pyx_codeobj__62 = (PyObject*)__Pyx_PyCode_New(1, 0, 1, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__61, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_ktlib_pyx, __pyx_n_s_color_green, 866, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__62)) __PYX_ERR(0, 866, __pyx_L1_error)
+  __pyx_codeobj__62 = (PyObject*)__Pyx_PyCode_New(1, 0, 1, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__61, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_ktlib_pyx, __pyx_n_s_color_green, 868, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__62)) __PYX_ERR(0, 868, __pyx_L1_error)
 
-  /* "ktlib.pyx":869
+  /* "ktlib.pyx":871
  *     return _color_green(text)
  * 
  * def color_red(str text):             # <<<<<<<<<<<<<<
  *     return _color_red(text)
  */
-  __pyx_tuple__63 = PyTuple_Pack(1, __pyx_n_s_text); if (unlikely(!__pyx_tuple__63)) __PYX_ERR(0, 869, __pyx_L1_error)
+  __pyx_tuple__63 = PyTuple_Pack(1, __pyx_n_s_text); if (unlikely(!__pyx_tuple__63)) __PYX_ERR(0, 871, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__63);
   __Pyx_GIVEREF(__pyx_tuple__63);
-  __pyx_codeobj__64 = (PyObject*)__Pyx_PyCode_New(1, 0, 1, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__63, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_ktlib_pyx, __pyx_n_s_color_red, 869, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__64)) __PYX_ERR(0, 869, __pyx_L1_error)
+  __pyx_codeobj__64 = (PyObject*)__Pyx_PyCode_New(1, 0, 1, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__63, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_ktlib_pyx, __pyx_n_s_color_red, 871, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__64)) __PYX_ERR(0, 871, __pyx_L1_error)
 
   /* "(tree fragment)":1
  * def __pyx_unpickle_ConfigError(__pyx_type, long __pyx_checksum, __pyx_state):             # <<<<<<<<<<<<<<
@@ -21504,39 +21504,39 @@ if (!__Pyx_RefNanny) {
   __Pyx_GIVEREF(__pyx_t_1);
   __pyx_t_1 = 0;
 
-  /* "ktlib.pyx":863
+  /* "ktlib.pyx":865
  * 
- * 
+ * # --------------- Python wrapper main funcion -------------------------
  * def arg_parse(args: List[str]):             # <<<<<<<<<<<<<<
  *     return _arg_parse_wrapper(args)
  * 
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_5ktlib_3arg_parse, NULL, __pyx_n_s_ktlib); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 863, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_5ktlib_3arg_parse, NULL, __pyx_n_s_ktlib); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 865, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_arg_parse, __pyx_t_1) < 0) __PYX_ERR(0, 863, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_arg_parse, __pyx_t_1) < 0) __PYX_ERR(0, 865, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "ktlib.pyx":866
+  /* "ktlib.pyx":868
  *     return _arg_parse_wrapper(args)
  * 
  * def color_green(str text):             # <<<<<<<<<<<<<<
  *     return _color_green(text)
  * 
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_5ktlib_5color_green, NULL, __pyx_n_s_ktlib); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 866, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_5ktlib_5color_green, NULL, __pyx_n_s_ktlib); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 868, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_color_green, __pyx_t_1) < 0) __PYX_ERR(0, 866, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_color_green, __pyx_t_1) < 0) __PYX_ERR(0, 868, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "ktlib.pyx":869
+  /* "ktlib.pyx":871
  *     return _color_green(text)
  * 
  * def color_red(str text):             # <<<<<<<<<<<<<<
  *     return _color_red(text)
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_5ktlib_7color_red, NULL, __pyx_n_s_ktlib); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 869, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_5ktlib_7color_red, NULL, __pyx_n_s_ktlib); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 871, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_color_red, __pyx_t_1) < 0) __PYX_ERR(0, 869, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_color_red, __pyx_t_1) < 0) __PYX_ERR(0, 871, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
   /* "(tree fragment)":1
