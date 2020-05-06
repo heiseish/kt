@@ -296,7 +296,7 @@ cdef class Gen(Action):
 
     def __cinit__(self, str problem_id):
         self._problem_id = problem_id
-        self._url = self.get_problem_url()
+        
 
     cdef _gen_samples(self):
         ''' Generate sample input file for `self._problem_id`
@@ -312,7 +312,16 @@ cdef class Gen(Action):
         + distinctivecharacter/ans2.txt
         - Generate a template file (distinctivecharacter.cpp) if a template file is provided in the .ktconfig file
         '''
+        cdef:
+            str domain = f"https://{self.get_url('hostname')}"
+            object template_file = {}
+            
         self.login()
+        self._url = os.path.join(
+            domain,
+            'problems',
+            self._problem_id
+        )
         page = requests.get(self._url, cookies=self.cookies, headers=_HEADERS)
         soup = BeautifulSoup(page.content, 'html.parser')
         data = soup.find_all('pre')
@@ -336,7 +345,7 @@ cdef class Gen(Action):
             'Please use `kt config` to set up a template file'))
             return
 
-        cdef object template_file = {}
+        
         with open(self.kt_config, 'r') as f:
             template_file = json.load(f)
         for k, template in template_file.items():
