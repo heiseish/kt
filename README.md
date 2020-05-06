@@ -54,6 +54,17 @@ You should be able to see how many test cases your code has passed so far
 <img src="https://raw.githubusercontent.com/heiseish/kt/master/img/ac.png">
 
 
+### Update version of kttool
+Check current version of kttool
+```bash
+kt version
+```
+If there is a newer version, you can run
+```bash
+kt update
+```
+to check.
+
 ## Installation
 ```bash
 # Below step is for linux only, skip this if gcc, g++, python3-dev etc have been installed

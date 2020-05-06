@@ -1,6 +1,5 @@
 #cython: language_level=3, c_string_type=unicode, c_string_encoding=utf8, boundscheck=False, cdivision=True, wraparound=False
 import sys
-from typing import List, Tuple
 from libcpp.string cimport string
 from libcpp.vector cimport vector
 from libcpp cimport bool as bool_t
@@ -35,6 +34,8 @@ __all__ = [
 # -------------- Global varible ----------------
 cdef const char* _KATTIS_RC_URL = 'https://open.kattis.com/download/kattisrc'
 cdef object _HEADERS = {'User-Agent': 'kt'}
+cdef const char* _VERSION = '0.0.4'
+cdef const char* _PYPI_PACKAGE_INFO = 'https://pypi.org/pypi/kttool/json'
 
 # global structs
 PLanguage = namedtuple('ProgrammingLanguage', 
@@ -267,7 +268,7 @@ cdef class Action(object):
         self._act()
 
 
-cdef void cwrite_samples(sample_data: Tuple[int, str, str, bool]):
+cdef void cwrite_samples(tuple sample_data):
     ''' Write input/output sample to file. This is used for multiprocess pool to generate input/output files
     Args:
     - sample_data: a tuple representing index, string data, problem id and a boolean declaring whether current
@@ -279,7 +280,7 @@ cdef void cwrite_samples(sample_data: Tuple[int, str, str, bool]):
     with open(file_name, 'w') as f:
         f.write(sample_data[1])
 
-def write_samples(sample_data: Tuple[int, str, str, bool]):
+def write_samples(tuple sample_data):
     ''' Py wrapper function since there is a weird behaviour when using cython function with multiprocess
     pool.
     Args:
@@ -315,6 +316,7 @@ cdef class Gen(Action):
         cdef:
             str domain = f"https://{self.get_url('hostname')}"
             object template_file = {}
+            list sample_data = []
             
         self.login()
         self._url = os.path.join(
@@ -326,7 +328,6 @@ cdef class Gen(Action):
         soup = BeautifulSoup(page.content, 'html.parser')
         data = soup.find_all('pre')
 
-        sample_data: List[Tuple[int, str, str, bool]] = []
         for i in range(len(data)):
             if i & 1:
                 sample_data.append((i // 2 + 1, data[i].text, self._problem_id, False))
@@ -542,7 +543,7 @@ cdef class Submit(Action):
         self.sk_icon = ':white_medium_square:'
         
 
-    cdef bool_t is_finished(self, object output_lines, result: List[object], str status, str run_time): 
+    cdef bool_t is_finished(self, object output_lines, list result, str status, str run_time): 
         ''' Judge whether the result and status obtained from kattis submission
         page has indicated whether the solution judgement has been done
         Args:
@@ -850,17 +851,42 @@ $%rand%$   Random string with 8 character (including "a-z" "0-9")
 cdef class Open(Action):
     cdef _act(self):
         webbrowser.open(self.get_problem_url())
-        
+
+cdef class Version(Action):
+    cdef _act(self):
+        print(f'Current version: {_color_cyan(_VERSION)}')
+
+cdef class Update(Action):
+    cdef _act(self):
+        cdef:
+            object pypi_info 
+            vector[string] releases
+            string current_latest_version
+
+        pypi_info = requests.get(_PYPI_PACKAGE_INFO)
+        releases = list(pypi_info.json()['releases'])
+        if len(releases) == 0:
+            print(_color_red('Hmm seems like there is currently no pypi releases :-?'))
+            return
+        current_latest_version = releases.back()
+        if current_latest_version != _VERSION:
+            subprocess.check_call([sys.executable, "-m", "pip", "install", "--upgrade", "--no-cache-dir", f"kttool=={current_latest_version}"])
+            print(f'Installed version {_color_green(current_latest_version)} successfully!')
+        else:
+            print(f'You already have the {_color_green("latest")} version!')
+
 
 cdef object map_key_to_class = {
     'gen': Gen,
     'test': Test,
     'submit': Submit,
     'config': Config,
-    'open': Open
+    'open': Open,
+    'version': Version,
+    'update': Update
 } 
 
-cdef Action _arg_parse_wrapper(args: List[str]):
+cdef Action _arg_parse_wrapper(list args):
     ''' Generate an appropriate command class based on user command stirng '''
     if len(args) == 0:
         raise ValueError(f'No command provided to kt')
@@ -871,7 +897,7 @@ cdef Action _arg_parse_wrapper(args: List[str]):
 
 
 # --------------- Python wrapper main funcion -------------------------
-def arg_parse(args: List[str]):
+def arg_parse(list args):
     return _arg_parse_wrapper(args)
 
 def color_green(str text):
