@@ -515,7 +515,7 @@ cdef class Test(Action):
                 else:
                     print(_color_red(f'Test Case #{sample.index}: {"Wrong Answer".ljust(13, " ")} ... {taken:.3f} s   {mem_used:.2f} Mb'))
                     print(_color_cyan('--- Input ---'))
-                    print(raw_input)
+                    print(raw_input.decode('utf-8'))
                     print(_color_cyan('--- Diff ---'))
                     for i in range(diff.size()):
                         print(diff[i])
