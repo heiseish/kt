@@ -8,6 +8,10 @@ try:
 except ImportError:
     cythonize = False
 
+import os
+os.environ['CC'] = 'g++'
+os.environ['CXX'] = 'g++'
+
 ext = 'pyx' if cythonize else 'cpp'
 
 HERE = pathlib.Path(__file__).parent
@@ -17,13 +21,12 @@ extensions = [
     Extension(
         "ktlib",
         sources=[f"ktlib.{ext}"],
-        extra_compile_args=["-O3"],
+        extra_compile_args=["-O3", "--std=c++17"],
         language="c++"
     ),
 ]
 
 cmdclass = {}
-
 
 if cythonize:
     extensions = cythonize(extensions)
@@ -51,6 +54,7 @@ setup(
     ],
     packages=find_packages(),
     include_package_data=True,
+    package_data = { 'ktlib': ['*.pxd']},
     install_requires=[
         'requests',
         'bs4',
