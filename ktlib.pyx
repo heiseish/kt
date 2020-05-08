@@ -24,12 +24,13 @@ from resource import *
 import psutil
 import configparser
 import webbrowser
-
+import signal
 
 __all__ = [
     'arg_parse',
     'color_red',
-    'color_green'
+    'color_green',
+    'exit_gracefully'
 ]
 
 # -------------- Global varible ----------------
@@ -37,7 +38,7 @@ cdef const char* _KATTIS_RC_URL = 'https://open.kattis.com/download/kattisrc'
 cdef object _HEADERS = {'User-Agent': 'kt'}
 cdef const char* _VERSION = '0.0.4'
 cdef const char* _PYPI_PACKAGE_INFO = 'https://pypi.org/pypi/kttool/json'
-
+cdef list test_subprocesses = []
 # global structs
 PLanguage = namedtuple('ProgrammingLanguage', 
     ['alias', 'extension', 'full_name', 'pre_script', 'script', 'post_script']
@@ -380,6 +381,7 @@ cdef bool_t compare_entity(const string& lhs, const string& rhs, string& diff) n
         return True
     diff.append(color_red(lhs))
     diff.append(color_green(rhs))
+    diff.push_back(b' ')
     return False
 
 
@@ -453,6 +455,7 @@ cdef class Test(Action):
             string temp
             float mem_used
             long rusage_denom = 1 << 20
+            object p
 
         self.detect_file_name()
         input_files = [f for f in os.listdir('.') if os.path.isfile(f) and f.startswith('in')]
@@ -489,16 +492,16 @@ cdef class Test(Action):
                 with open(sample.input_file, 'rb') as f:
                     raw_input = f.read()
 
-                p = Popen([self.script, '-'], stdin=PIPE, stdout=PIPE, stderr=PIPE, shell=True, 
+                p = Popen([self.script, '-'], stdin=PIPE, stdout=PIPE, shell=False, 
                     preexec_fn=os.setsid)
+                test_subprocesses.append(p)
                 proc = psutil.Process(p.pid)
                 mem_used = proc.memory_info().rss / rusage_denom
                 start_time = time.perf_counter()
-                raw_output, stderr_data = p.communicate(raw_input)
+                raw_output = p.communicate(raw_input)[0]
+                p.wait()
                 taken = time.perf_counter()  - start_time
-                if stderr_data.size() > 0:
-                    print(stderr_data, file=sys.stderr)
-
+                
                 actual = [z.strip(" \n") for z in raw_output.split('\n')]
                 make_list_equal(actual, expected)
                 diff.clear()
@@ -515,7 +518,7 @@ cdef class Test(Action):
                     for j in range(len(ith_line_exp)):
                         lhs = ith_line_exp[j]
                         rhs = ith_line_actual[j]
-                        is_ac &= compare_entity(lhs, rhs, current_diff)
+                        is_ac &= compare_entity(rhs,lhs, current_diff)
 
                     diff.push_back(current_diff)
                 if is_ac:
@@ -906,3 +909,20 @@ cpdef Action arg_parse(list args):
     if args[0] not in map_key_to_class:
         raise ValueError(f'First argument should be one of {list(map_key_to_class.keys())}')
     return map_key_to_class[args[0]](*args[1:])
+
+
+cpdef exit_gracefully(signum, frame):
+    original_sigint = signal.getsignal(signal.SIGINT)
+    # restore the original signal handler as otherwise evil things will happen
+    # in raw_input when CTRL+C is pressed, and our signal handler is not re-entrant
+    signal.signal(signal.SIGINT, original_sigint)
+    for sp in test_subprocesses:
+        try:
+            sp.kill()
+        except:
+            pass
+    print(color_green(b'Great is the art of beginning, but greater is the art of ending.'))
+    sys.exit(1)
+    
+
+    

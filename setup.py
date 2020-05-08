@@ -36,7 +36,7 @@ setup(
     name='kttool',
     cmdclass=cmdclass,
     ext_modules=extensions,
-    version="0.0.4",
+    version="0.0.5",
     description="Kattis command line tool",
     long_description=README,
     long_description_content_type="text/markdown",
