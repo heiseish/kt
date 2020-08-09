@@ -1,9 +1,7 @@
-#cython: language_level=3, c_string_type=unicode, c_string_encoding=utf8, boundscheck=False, cdivision=True, wraparound=False
+# cython: language_level=3, boundscheck=False, cdivision=True, wraparound=False
 # distutils: language=c++
 import sys
-from libcpp.string cimport string
-from libcpp.vector cimport vector
-from libcpp cimport bool as bool_t
+from pathlib import Path
 import requests
 import os
 import re
@@ -13,11 +11,11 @@ from bs4 import BeautifulSoup
 import multiprocessing
 import concurrent.futures
 from reprint import output
-from html.parser import HTMLParser
 import emoji
+from html.parser import HTMLParser
 from collections import namedtuple
-import subprocess
 from subprocess import Popen, PIPE
+import subprocess
 import json
 import shlex
 from resource import *
@@ -26,6 +24,11 @@ import configparser
 import webbrowser
 import signal
 
+cimport cython
+from libcpp.vector cimport vector
+from libcpp cimport bool as bool_t
+from libc.stdio cimport FILE, fopen, fclose, fflush
+from .version import version
 __all__ = [
     'arg_parse',
     'color_red',
@@ -34,10 +37,10 @@ __all__ = [
 ]
 
 # -------------- Global varible ----------------
-cdef const char* _KATTIS_RC_URL = 'https://open.kattis.com/download/kattisrc'
+DEF _KATTIS_RC_URL = 'https://open.kattis.com/download/kattisrc'
 cdef object _HEADERS = {'User-Agent': 'kt'}
-cdef const char* _VERSION = '0.0.4'
-cdef const char* _PYPI_PACKAGE_INFO = 'https://pypi.org/pypi/kttool/json'
+
+DEF _PYPI_PACKAGE_INFO = 'https://pypi.org/pypi/kttool/json'
 cdef list test_subprocesses = []
 # global structs
 PLanguage = namedtuple('ProgrammingLanguage', 
@@ -47,7 +50,7 @@ PLanguage = namedtuple('ProgrammingLanguage',
 cdef class ConfigError(Exception):
     pass
 
-cdef object map_template_to_plang = {
+cdef dict map_template_to_plang = {
     'c': PLanguage('c', 'c','C', 
         'gcc $%file%$.c -o $%file%$.out',
         './$%file%$.out',
@@ -94,45 +97,32 @@ cdef object map_template_to_plang = {
         ''
     )
 }
-
-
 # -------------- Color for formatting ----------------
-cdef:
-    string BOLD_SEQ = b'\033[1m'
-    string RESET_SEQ = b'\033[0m'
-    string BLACK = b'\033[6;90m'
-    string RED = b'\033[6;91m'
-    string GREEN = b'\033[6;92m'
-    string YELLOW = b'\033[6;93m'
-    string BLUE = b'\033[6;94m'
-    string MAGENTA = b'\033[6;95m'
-    string CYAN = b'\033[6;96m'
-    string WHITE = b'\033[6;97m'
+DEF BOLD_SEQ = '\033[1m'
+DEF RESET_SEQ = '\033[0m'
+DEF BLACK = '\033[6;90m'
+DEF RED = '\033[6;91m'
+DEF GREEN = '\033[6;92m'
+DEF YELLOW = '\033[6;93m'
+DEF BLUE = '\033[6;94m'
+DEF MAGENTA = '\033[6;95m'
+DEF CYAN = '\033[6;96m'
+DEF WHITE = '\033[6;97m'
 
-cpdef string color_cyan(const string& text) nogil:
-    cdef:
-        string res = CYAN
-    res.append(text)
-    res.append(RESET_SEQ)
-    return res
-
-cpdef string color_green(const string& text) nogil:
-    cdef:
-        string res = GREEN
-    res.append(text)
-    res.append(RESET_SEQ)
-    return res
+cpdef str color_cyan(str text):
+    return f'{CYAN}{text}{RESET_SEQ}'
 
 
-cpdef string color_red(const string& text) nogil:
-    cdef:
-        string res = RED
-    res.append(text)
-    res.append(RESET_SEQ)
-    return res
+cpdef str color_green(str text):
+    return f'{GREEN}{text}{RESET_SEQ}'
 
+
+cpdef str color_red(str text):
+    return f'{RED}{text}{RESET_SEQ}'
+
+log = print
 # -------------- Utility functions ----------------
-cdef string ask_with_default(string qu, string default_val=b''):
+cdef str ask_with_default(str qu, str default_val=''):
     ''' Print out `qu` to console and ask for input value from user
     If no input was provided by user, `default_val` will be returned instead
     Args:
@@ -141,43 +131,47 @@ cdef string ask_with_default(string qu, string default_val=b''):
     Returns:
     - string value as the response
     '''
-    cdef:
-        string ret
     qu = f'Please enter {color_cyan(qu)}'
-    if default_val.size() > 0:
+    if default_val:
         qu = f'{qu} | Default value: {default_val}\n'
-    ret = input(qu)
-    if ret.size() == 0:
+    cdef str ret = input(qu)
+    if not ret:
         return default_val
     return ret
 
 cdef void make_list_equal(
-    vector[string]& lhs, 
-    vector[string]& rhs, 
-    string pad_element = b''
-) nogil:
+    list lhs, 
+    list rhs, 
+    str pad_element = ''
+) except *:
     ''' Make two vector of string equation in length by padding with `pad_element`
     Args:
     - lhs, rhs: 2 vectors of string to be made equal in length
     - pad_element: string to fill the shorter vector
     '''
-    while lhs.size() < rhs.size():
-        lhs.push_back(pad_element)
-    while rhs.size() < lhs.size():
-        rhs.push_back(pad_element)
-
-
+    cdef int delta_size = abs(len(lhs) - len(rhs))
+    cdef list delta_list = [ pad_element ] * delta_size
+    if len(lhs) < len(rhs):
+        lhs.extend(delta_list)
+    else:
+        rhs.extend(delta_list)
 
 # -------------- Core functions/classes ----------------
-cdef class Action(object):
+cdef class Action:
+    cdef:
+        object config_path
+        object cfg
+        object cookies
+        object kt_config
     ''' Base class for handle general command.
     Handle loading up .kattisrc config file
     '''
     def __cinit__(self):
-        self.config_path = os.path.join(os.getenv('HOME'), '.kattisrc') # kattis config file
-        self.kt_config = os.path.join(os.getenv('HOME'), '.ktconfig') # kt tool file
+        self.config_path = Path.home() /  '.kattisrc' # kattis config file
+        self.kt_config = Path.home() /  '.ktconfig' # kt tool file
+        self.cfg = None
 
-    cdef string get_url(self, const string& option, string default = b''):
+    cdef str get_url(self, str option, str default = '') :
         ''' Get appropriate urls from kattisrc file
         Args:
         - option: parameter to get from katticrc config file
@@ -185,32 +179,31 @@ cdef class Action(object):
         Returns:
         - Full url path to the required attr
         '''
-        cdef:
-            string kattis_host
+        cdef str kattis_host
         if self.cfg.has_option('kattis', option):
             return self.cfg.get('kattis', option)
-        else:
-            kattis_host = self.cfg.get('kattis', 'hostname')
-            return f'https://{kattis_host}/{default}'
+
+        kattis_host = self.cfg.get('kattis', 'hostname')
+        return f'https://{kattis_host}/{default}'
 
 
-    cdef read_config_from_file(self):
+    cdef void read_config_from_file(self) except *:
         ''' kttool deals with 2 config files:
         - kattisrc: provided by official kattis website, provide domain name and general urls
         - ktconfig: handle templates by kttool
         '''
         # Initialize ktconfig file if file doesnt exist
-        if not os.path.exists(self.kt_config):
+        if not self.kt_config.is_file():
             with open(self.kt_config, 'w') as f:
                 f.write('{}\n')
 
         self.cfg = configparser.ConfigParser()
-        if not os.path.exists(self.config_path):
+        if not self.config_path.is_file():
             raise RuntimeError(f'No valid config file at {self.config_path}. '
             f'Please download it at {_KATTIS_RC_URL}')
 
         self.cfg.read(self.config_path)
-        username = self.cfg.get('user', 'username')
+        cdef str username = self.cfg.get('user', 'username')
         password = token = None
         try:
             password = self.cfg.get('user', 'password')
@@ -228,14 +221,17 @@ cdef class Action(object):
         print(f'Username: {color_green(username)}')
 
 
-    cdef login(self):
+    cdef void login(self) except *:
         ''' Try to login and obtain cookies from succesful signin
         '''
         cdef:
-            string login_url
-            string err
+            str login_url
+            str err
+            str username
+            str password
+
         username = self.cfg.get('user', 'username')
-        password = token = None
+        password = token = ''
         try:
             password = self.cfg.get('user', 'password')
         except configparser.NoOptionError:
@@ -244,7 +240,7 @@ cdef class Action(object):
             token = self.cfg.get('user', 'token')
         except configparser.NoOptionError:
             pass
-        login_url = self.get_url(b'loginurl', b'login')
+        login_url = self.get_url('loginurl', 'login')
         login_args = {'user': username, 'script': 'true'}
         if password:
             login_args['password'] = password
@@ -254,22 +250,22 @@ cdef class Action(object):
         
         if not login_reply.status_code == 200:
             if login_reply.status_code == 403:
-                err = b'Incorrect username or password/token (403)'
+                err = 'Incorrect username or password/token (403)'
             elif login_reply.status_code == 404:
-                err = b'Incorrect login URL (404)'
+                err = 'Incorrect login URL (404)'
             else:
                 err = f'Status code: {login_reply.status_code}'
             raise RuntimeError(f'Login failed. {err}')
         self.cookies = login_reply.cookies
 
-    cdef string get_problem_id(self):
-        # ASsuming user is in the folder with the name of the problem id
-        return os.path.basename(os.getcwd()) 
+    cdef str get_problem_id(self):
+        # Assuming user is in the folder with the name of the problem id
+        return Path.cwd().name 
 
-    cdef string get_problem_url(self):
+    cdef str get_problem_url(self):
         cdef:
-            string domain = f"https://{self.get_url(b'hostname')}"
-            string problem_id = self.get_problem_id()
+            str domain = f"https://{self.get_url('hostname')}"
+            str problem_id = self.get_problem_id()
 
         return os.path.join(
             domain,
@@ -278,38 +274,57 @@ cdef class Action(object):
         )
 
 
-    cdef _act(self):
-        raise NotImplementedError
+    cdef void _act(self) except *:
+        raise NotImplementedError()
 
-    def act(self):
+    cpdef void act(self) except *:
         ''' Python wrapper function to call cython private method _act
         '''
         self.read_config_from_file()
         self._act()
 
+@cython.final
+cdef class SampleData:
+    cdef:
+        str problem_id
+        bint is_in
+        str sample_id
+        str data
+    
+    def __cinit__(self, str problem_id='', str data='', bint is_in=True, str sample_id=''):
+        self.problem_id = problem_id
+        self.is_in = is_in
+        self.sample_id = sample_id
+        self.data = data
 
 
-
-cpdef void write_samples(tuple sample_data):
+cpdef void write_samples(SampleData sample_data) except *:
     ''' Write input/output sample to file. This is used for multiprocess pool to generate input/output files
     Args:
     - sample_data: a tuple representing index, string data, problem id and a boolean declaring whether current
     file is input (False if the file is output)
     '''
     cdef:
-        string file_name_prefix = b'in' if sample_data[3] else b'ans'
-        string file_name = f'{sample_data[2]}/{file_name_prefix}{sample_data[0]}.txt'
-    
-    with open(file_name, 'w') as f:
-        f.write(sample_data[1])
+        str file_name_prefix = 'in' if sample_data.is_in else 'ans'
+        str file_name = f'{sample_data.problem_id}/{file_name_prefix}{sample_data.sample_id}.txt'
 
+    with open(file_name, 'w+') as f:
+        f.write(sample_data.data)
+
+
+@cython.final
 cdef class Gen(Action):
     ''' Handle `gen` command for kt_tool '''
-    def __cinit__(self, string problem_id):
-        self._problem_id = problem_id
+    cdef:
+        str _problem_id
+        str _url 
         
-
-    cdef _gen_samples(self):
+    ''' Handle `gen` command for kt_tool '''
+    def __cinit__(self, str problem_id):
+        self._problem_id = problem_id
+        self._url = ''
+    
+    cdef void _gen_samples(self) except *:
         ''' Generate sample input file for `self._problem_id`
         The basic flow is to scrape the problem task page and retrieve the relevent fields
         Generate the sample files to problem id folder
@@ -324,142 +339,155 @@ cdef class Gen(Action):
         - Generate a template file (distinctivecharacter.cpp) if a template file is provided in the .ktconfig file
         '''
         cdef:
-            string domain = f"https://{self.get_url(b'hostname')}"
-            object template_file = {}
+            str domain = f"https://{self.get_url('hostname')}"
+            dict template_file = {}
             list sample_data = []
-            
+            object data
+            object soup
+            object page
+            size_t i = 0
+            str k
+            dict template
+
+
         self.login()
-        self._url = os.path.join(
-            domain,
-            'problems',
-            self._problem_id
-        )
+        self._url = self.get_problem_url()
         page = requests.get(self._url, cookies=self.cookies, headers=_HEADERS)
         soup = BeautifulSoup(page.content, 'html.parser')
         data = soup.find_all('pre')
 
         for i in range(len(data)):
             if i & 1:
-                sample_data.append((i // 2 + 1, data[i].text, self._problem_id, False))
+                sample_data.append(SampleData(sample_id=i // 2 + 1, data=data[i].text, problem_id=self._problem_id, is_in=False))
             else:
-                sample_data.append((i // 2 + 1, data[i].text, self._problem_id, True))
+                sample_data.append(SampleData(sample_id=i // 2 + 1, data=data[i].text, problem_id=self._problem_id, is_in=True))
 
-        assert(len(data) % 2 == 0, 'Internal error: Number of sample input '
-        ' is not equal to number of sample output')
+        assert len(data) % 2 == 0, 'Internal error: Number of sample input '\
+            ' is not equal to number of sample output'
 
         with concurrent.futures.ProcessPoolExecutor(max_workers=4) as executor:
             executor.map(write_samples, sample_data)
 
-        print(color_green(f'Generate {len(sample_data) // 2} sample(s) to {self._problem_id}'))
+        log(color_green(f'Generate {len(sample_data) // 2} sample(s) to {self._problem_id}'))
         if not os.path.exists(self.kt_config):
-            print(color_red(b'.ktconfig file has not been set up so no template was generated. '
-            b'Please use `kt config` to set up a template file'))
+            log(color_red('.ktconfig file has not been set up so no template was generated. '
+            'Please use `kt config` to set up a template file'))
             return
 
         
         with open(self.kt_config, 'r') as f:
             template_file = json.load(f)
+
         for k, template in template_file.items():
             if template.get('default', False):
                 shutil.copyfile(template.get('path'), f'{self._problem_id}/{self._problem_id}.{map_template_to_plang[k].extension}')
-                print(color_green(b'Template file has been generated'))
+                log(color_green('Template file has been generated'))
                 return
-        print(color_red(f'No default template detected in {self.kt_config}'))
+        log(color_red(f'No default template detected in {self.kt_config}'))
 
-
-
-    cdef _act(self):
-        print(f'Problem is {self._problem_id}')
-        os.makedirs(self._problem_id, exist_ok=True)
+    cdef void _act(self) except *:
+        log(f'Problem is {self._problem_id}')
+        cdef object problem_dir = Path.cwd() / self._problem_id
+        problem_dir.mkdir(parents=True, exist_ok=True)
         self._gen_samples()
     
 
-cdef bool_t compare_entity(const string& lhs, const string& rhs, string& diff) nogil:
+cdef tuple compare_entity(str lhs, str rhs):
     if lhs == rhs:
-        diff.append(lhs)
-        diff.push_back(b' ')
-        return True
-    diff.append(color_red(lhs))
-    diff.append(color_green(rhs))
-    diff.push_back(b' ')
-    return False
+        return True, f'{lhs} '
+    return False, f'{color_red(lhs)}{color_green(rhs)} '
 
 
+@cython.final
+cdef class RunnableFile:
+    cdef:
+        str ext
+        str problem_id
+        str file_name #Path
+
+    def __cinit__(self, str problem_id, str ext, object file_name):
+        self.problem_id = problem_id
+        self.ext = ext
+        self.file_name = file_name
+
+
+@cython.final
 cdef class Test(Action):
-    cdef detect_file_name(self):
+    cdef:
+        str file_name
+        str pre_script
+        str script
+        str post_script
+        str lang
+
+    cdef void detect_file_name(self) except *:
         ''' Confirm the executable file if there is multiple files that are runnable in current folder
         '''
         cdef:
-            object existed_templates = {}
-            object acceptable_file_ext = {}
-            string alias
-            string res
+            dict existed_templates = {}
+            dict acceptable_file_ext = {}
+            str alias
+            str res
             int opt = 0
+            list parts
+            list runnable_files
+            list files
+            size_t i = 0
+            str k
+            object x, f
 
         with open(self.kt_config) as f:
             existed_templates = json.load(f)
         
-        for k, v in existed_templates.items():
+        for k in existed_templates.keys():
             acceptable_file_ext[map_template_to_plang[k].extension] = map_template_to_plang[k]
 
-        files = [f for f in os.listdir('.') if os.path.isfile(f)]
+        files = [x for x in Path('.').iterdir() if x.is_file()]
         runnable_files = []
         for f in files:
-            parts = f.split('.')
+            parts = str(f).split('.')
             if len(parts) <= 1:
                 continue
-            if  parts[1] in acceptable_file_ext:
-                runnable_files.append((parts[0], f, parts[1]))
+            if parts[1] in acceptable_file_ext:
+                runnable_files.append(RunnableFile(
+                    problem_id=parts[0], 
+                    ext=parts[1], 
+                    file_name=str(f)
+                ))
         
         if len(runnable_files) == 0:
             raise RuntimeError('Not executable code file detected')
         
         if len(runnable_files) > 1:
-            print(color_cyan(b'Choose a file to run'))
+            log(color_cyan('Choose a file to run'))
             for i in range(len(runnable_files)):
-                print(f'  {i}: {runnable_files[i][1]}')
-            res = input()
-            opt = int(res)
+                log(f'  {i}: {runnable_files[i].file_name}')
+            opt = int(input())
             assert 0 <= opt < len(runnable_files), 'Invalid option chosen'
 
         
-        self.file_name = runnable_files[opt][0]
-        alias = acceptable_file_ext[runnable_files[opt][2]].alias
-        self.lang = acceptable_file_ext[runnable_files[opt][2]].full_name
+        self.file_name = runnable_files[opt].problem_id
+        alias = acceptable_file_ext[runnable_files[opt].ext].alias
+        self.lang = acceptable_file_ext[runnable_files[opt].ext].full_name
         self.pre_script = existed_templates.get(alias, {}).get('pre_script').replace('$%file%$', self.file_name)
         self.script = existed_templates.get(alias, {}).get('script').replace('$%file%$', self.file_name)
         self.post_script = existed_templates.get(alias, {}).get('post_script').replace('$%file%$', self.file_name)
 
 
-    cdef _act(self):
+    cdef void _act(self) except *:
         ''' Run the executable file against sample input and output files present in the folder
         The sample files will only be recognized if the conditions hold:
         - Naming style should be in{idx}.txt and ans{txt}.txt
         - for in{idx}.txt, there must exist a ans{idx}.txt with the same `idx`
         '''
         cdef:
-            int idx
-            float start_time
-            float taken
-            vector[string] actual
-            vector[string] expected
-            vector[string] diff
-            vector[string] ith_line_exp
-            vector[string] ith_line_actual
-            string current_diff
-            bool_t is_ac
-            string raw_output
-            string stderr_data
-            string lhs
-            string rhs
-            string temp
-            float mem_used
-            long rusage_denom = 1 << 20
-            object p
+            list input_files, output_files, usable_samples
+            object x, input_file, output_file
+
 
         self.detect_file_name()
-        input_files = [f for f in os.listdir('.') if os.path.isfile(f) and f.startswith('in')]
-        output_files = [f for f in os.listdir('.') if os.path.isfile(f) and f.startswith('ans')]
+        input_files = [x for x in Path('.').iterdir() if x.is_file() and str(x).startswith('in')]
+        output_files = [x for x in Path('.').iterdir() if x.is_file() and str(x).startswith('ans')]
         usable_samples = []
         
         # Get sample files that match the condition
@@ -468,18 +496,36 @@ cdef class Test(Action):
         )
         pattern = re.compile(r"\d+")
         for input_file in input_files:
-            idx = int(pattern.search(input_file).group(0))
+            idx = int(pattern.search(str(input_file)).group(0))
             for output_file in output_files:
-                if idx == int(pattern.search(output_file).group(0)):
-                    usable_samples.append(Sample(idx, input_file, output_file))
+                if idx == int(pattern.search(str(output_file)).group(0)):
+                    usable_samples.append(Sample(
+                        index=idx, 
+                        input_file=input_file, 
+                        output_file=output_file)
+                    )
                     break
         # run test from ascending number of file index
         usable_samples = sorted(usable_samples, key=lambda x: x.index)
         # run test
-        print(f'Problem ID : {color_cyan(self.get_problem_id())}')
-        print(f'Lanuage    : {self.lang}')
-        if self.pre_script.size() > 0:
+        log(f'Problem ID : {color_cyan(self.get_problem_id())}')
+        log(f'Lanuage    : {self.lang}')
+        if self.pre_script:
             subprocess.check_call(shlex.split(self.pre_script))
+
+
+        cdef:
+            double mem_used
+            long rusage_denom = 1 << 20
+            bint is_ac, is_good
+            list actual = [], expected = [], diff = []
+            list raw_input
+            object proc # process 
+            double start_time, taken
+            str raw_output
+            list ith_line_exp, ith_line_actual
+            int i, j
+            str current_diff, now_diff
 
         for sample in usable_samples:
             is_ac = True
@@ -489,7 +535,7 @@ cdef class Test(Action):
             try:
                 with open(sample.output_file, 'r') as f:
                     expected = [l.strip(" \n") for l in f.readlines()]
-                with open(sample.input_file, 'rb') as f:
+                with open(sample.input_file, 'rb') as f:    
                     raw_input = f.read()
 
                 p = Popen([self.script, '-'], stdin=PIPE, stdout=PIPE, shell=False, 
@@ -498,13 +544,11 @@ cdef class Test(Action):
                 proc = psutil.Process(p.pid)
                 mem_used = proc.memory_info().rss / rusage_denom
                 start_time = time.perf_counter()
-                raw_output = p.communicate(raw_input)[0]
+                raw_output = p.communicate(raw_input)[0].decode()
                 p.wait()
                 taken = time.perf_counter()  - start_time
-                
                 actual = [z.strip(" \n") for z in raw_output.split('\n')]
                 make_list_equal(actual, expected)
-                diff.clear()
 
                 for i in range(len(expected)):
                     ''' Compare the values line by line
@@ -514,48 +558,51 @@ cdef class Test(Action):
                     ith_line_actual = [z for z in actual[i].split(' ')]
 
                     make_list_equal(ith_line_exp, ith_line_actual)
-                    current_diff.clear()
+                    current_diff = ''
                     for j in range(len(ith_line_exp)):
                         lhs = ith_line_exp[j]
                         rhs = ith_line_actual[j]
-                        is_ac &= compare_entity(rhs,lhs, current_diff)
+                        is_good, now_diff = compare_entity(rhs,lhs)
+                        is_ac &= is_good
+                        current_diff += now_diff
 
-                    diff.push_back(current_diff)
+                    diff.append(current_diff)
                 if is_ac:
-                    print(color_green(f'Test Case #{sample.index}: {"Accepted".ljust(13, " ")} ... {taken:.3f} s   {mem_used:.2f} Mb'))
+                    log(color_green(f'Test Case #{sample.index}: {"Accepted".ljust(13, " ")} ... {taken:.3f} s   {mem_used:.2f} M'))
                 else:
-                    print(color_red(f'Test Case #{sample.index}: {"Wrong Answer".ljust(13, " ")} ... {taken:.3f} s   {mem_used:.2f} Mb'))
-                    print(color_cyan(b'--- Input ---'))
-                    print(raw_input.decode('utf-8'))
-                    print(color_cyan(b'--- Diff ---'))
-                    for i in range(diff.size()):
-                        print(diff[i])
+                    log(color_red(f'Test Case #{sample.index}: {"Wrong Answer".ljust(13, " ")} ... {taken:.3f} s   {mem_used:.2f} M'))
+                    log(color_cyan('--- Input ---'))
+                    log(raw_input)
+                    log(color_cyan('--- Diff ---'))
+                    for i in range(len(diff)):
+                        log(diff[i])
 
             except Exception as e:
-                print(color_red(f'Test case #{sample.index}: Runtime Error {e}'))
-        if self.post_script.size() > 0:
+                log(color_red(f'Test case #{sample.index}: Runtime Error {e}'))
+
+        if self.post_script:
             subprocess.check_call(shlex.split(self.post_script))
 
-
+@cython.final
 cdef class Submit(Action):
     '''Handle kt submit action to push the file to kattis website'''
     cdef:
-        string ac_icon
-        string rj_icon
-        string sk_icon
+        str ac_icon
+        str rj_icon
+        str sk_icon
 
-        string file_name
-        string lang
-        string submission_id
-        string problem_id
+        str file_name
+        str lang
+        str submission_id
+        str problem_id
 
     def __cinit__(self):
-        self.ac_icon = b':heavy_check_mark:'
-        self.rj_icon = b':heavy_multiplication_x:'
-        self.sk_icon = b':white_medium_square:'
+        self.ac_icon = ':heavy_check_mark:'
+        self.rj_icon = ':heavy_multiplication_x:'
+        self.sk_icon = ':white_medium_square:'
         
 
-    cdef bool_t is_finished(self, object output_lines, object result, string& status, string run_time): 
+    cdef bint is_finished(self, object output_lines, object result, str status, str run_time) except? -1: 
         ''' Judge whether the result and status obtained from kattis submission
         page has indicated whether the solution judgement has been done
         Args:
@@ -568,10 +615,10 @@ cdef class Submit(Action):
         cdef:
             int tot_res = len(result)
             int ac_ct = 0
-            bool_t is_ac = True
-            bool_t rejected = False
-            bool_t finished = False
-            string _status = status
+            bint is_ac = True
+            bint rejected = False
+            bint finished = False
+            str _status = status
 
         for res in result:
             _class = res.get('class', None)
@@ -594,14 +641,14 @@ cdef class Submit(Action):
         else:
             finished = ac_ct == tot_res
 
-        if status == b'Compiling':
+        if status == 'Compiling':
             finished = False
-        elif status == b'Compile Error':
+        elif status == 'Compile Error':
             _status = color_red(status)
         elif not finished:
             _status = color_cyan(status)
         else:
-            if status == b'Running': # status text not updated, lets try again
+            if status == 'Running': # status text not updated, lets try again
                 finished = False
             elif is_ac:
                 _status = color_green(status)
@@ -619,17 +666,17 @@ cdef class Submit(Action):
         
 
 
-    cdef _render_result(self, string submission_url_ret):
+    cdef void _render_result(self, str submission_url_ret) except *:
         ''' Continuously polling for result from `submission_url_ret`
         Args:
         - submission_url_ret: url for the submission to be checked
         '''
         cdef:
             int time_out = 20
-            float cur_time = 0
-            string status_ret
-            string runtime_ret
-            bool_t done  = False
+            double cur_time = 0
+            str status_ret
+            str runtime_ret
+            bint done  = False
 
 
         with output(output_type='dict') as output_lines:
@@ -644,26 +691,28 @@ cdef class Submit(Action):
                     runtime_ret = soup.find('td', class_='runtime middle').text
                     done = self.is_finished(output_lines, submission_ret, status_ret, runtime_ret)
                 except Exception as e:
-                    print(color_red(f'Internal error: {e}'))
+                    log(color_red(f'Internal error: {e}'))
 
                 time.sleep(0.4)
                 cur_time += 0.4
 
 
-    cdef detect_file_name(self):
+    cdef str detect_file_name(self):
         ''' Detect executable file to submit for kattis judge if there are multiple files
         that are executable based on user ktconfig file
         '''
         cdef:
-            object acceptable_file_ext = {}
-            string alias
-            int opt = 0
+            dict acceptable_file_ext = {}
+            str alias
+            int opt = 0, i
             int res_int
-            string res
+            str res
+            list files, runnable_files
+            object f
 
-        for k, v in map_template_to_plang.items():
+        for k in map_template_to_plang.keys():
             acceptable_file_ext[map_template_to_plang[k].extension] = map_template_to_plang[k]
-        files = [f for f in os.listdir('.') if os.path.isfile(f)]
+        files = [f for f in Path().iterdir() if f.is_file()]
         runnable_files = []
         RunnableFile = namedtuple('RunnableFile',
             ['file_name', 'full_name', 'ext']
@@ -679,7 +728,7 @@ cdef class Submit(Action):
             raise RuntimeError('Not executable code file detected')
 
         if len(runnable_files) > 1:
-            print(color_cyan(b'Choose a file:'))
+            log(color_cyan('Choose a file:'))
             for i in range(len(runnable_files)):
                 print(f'  {i}: {runnable_files[i].full_name}')
             res = input()
@@ -696,14 +745,15 @@ cdef class Submit(Action):
             self.lang = acceptable_file_ext[runnable_files[opt].ext].full_name
             
 
-    cdef _act(self):
+    cdef void _act(self) except *:
         '''Submit the code file for kattis judge'''
         cdef:
-            string err
-            string submissions_url
-            string submission_url_ret
-            string submit_response
-            string problem_id = self.get_problem_id()
+            str err
+            str submissions_url
+            str submission_url_ret
+            str submit_response
+            str problem_id = self.get_problem_id()
+            list files
 
         self.detect_file_name()
         data = {'submit': 'true',
@@ -719,22 +769,22 @@ cdef class Submit(Action):
                               (os.path.basename(self.file_name),
                                sub_file.read(),
                                'application/octet-stream')))
-        submit_url = self.get_url(b'submissionurl', b'submit')
+        submit_url = self.get_url('submissionurl', 'submit')
         self.login()
         ret = requests.post(submit_url, data=data, files=files, 
             cookies=self.cookies, headers=_HEADERS)
         if ret.status_code != 200:
             if ret.status_code == 403:
-                err = b'Access denied (403)'
+                err = 'Access denied (403)'
             elif ret.status_code == 404:
-                err = b'Incorrect submit URL (404)'
+                err = 'Incorrect submit URL (404)'
             else:
                 err = f'Status code: {ret.status_code}'
             raise RuntimeError(f'Submission failed: {err}')
-        submissions_url  = self.get_url(b'submissionsurl', b'submissions')
+        submissions_url  = self.get_url('submissionsurl', 'submissions')
         submit_response = ret.content.decode('utf-8').replace('<br />', '\n')
         self.submission_id = re.search(r'Submission ID: (\d+)', submit_response).group(1)
-        print(color_green(b'Submission successful'))
+        log(color_green('Submission successful'))
         submission_url_ret  = f'{submissions_url}/{self.submission_id}' 
         self._render_result(submission_url_ret)
 
@@ -742,17 +792,17 @@ cdef class Submit(Action):
 cdef class Config(Action):
     cdef add_template(self):
         cdef:
-            string question = b'Which template would you like to add:\n'
-            string temp
-            object selectable_lang = {}
+            str question = 'Which template would you like to add:\n'
+            str temp
+            dict selectable_lang = {}
             int idx = 1
-            object existed_templates = {}
-            string res
+            dict existed_templates = {}
+            str res
             int ret
-            object options = {}
+            dict options = {}
 
-        print(color_green(b'Adapted from xalanq\'s cf tool'))
-        print('''
+        log(color_green('Adapted from xalanq\'s cf tool'))
+        log('''
 Template will run 3 scripts in sequence when you run "kt test":
     - before_script   (execute once)
     - script          (execute the number of samples times)
@@ -785,31 +835,31 @@ $%rand%$   Random string with 8 character (including "a-z" "0-9")
         assert 1 <= ret < idx, 'Invalid input'
         
         selected_lang = selectable_lang[ret][1]
-        options['path'] = ask_with_default(b'Template path', f'~/template.{selected_lang.extension}')
-        options['pre_script'] = ask_with_default(b'Pre-script', selected_lang.pre_script)
-        options['script'] = ask_with_default(b'Script', selected_lang.script)
-        options['post_script'] = ask_with_default(b'Post-script', selected_lang.post_script)
+        options['path'] = ask_with_default('Template path', f'~/template.{selected_lang.extension}')
+        options['pre_script'] = ask_with_default('Pre-script', selected_lang.pre_script)
+        options['script'] = ask_with_default('Script', selected_lang.script)
+        options['post_script'] = ask_with_default('Post-script', selected_lang.post_script)
         options['default'] = False if existed_templates else True
 
         existed_templates[selected_lang.alias] = options
         with open(self.kt_config, 'w') as kt_config:
             json.dump(existed_templates, kt_config, indent=2)
-        print(color_green(b'Yosh, your configuration has been saved'))
+        log(color_green('Yosh, your configuration has been saved'))
 
 
     cdef remove_template(self):
         ''' Remove a template from ktconfig file'''
         cdef:
-            object existed_templates = {}
+            dict existed_templates = {}
             str res
-            bool_t move_default
+            bint move_default
 
         with open(self.kt_config) as f:
             existed_templates = json.load(f)
 
-        print(f'Which template would you like to {color_red(b"delete")} ? For eg cpp, cc, ...')
+        log(f'Which template would you like to {color_red("delete")} ? For eg cpp, cc, ...')
         for k, v in existed_templates.items():
-            print(k)
+            log(k)
         res = input()
 
         assert res in existed_templates, f'Invalid template chosen. Template {res} is not in ur config file'
@@ -821,18 +871,18 @@ $%rand%$   Random string with 8 character (including "a-z" "0-9")
         with open(self.kt_config, 'w') as kt_config:
             json.dump(existed_templates, kt_config, indent=2)
 
-    cdef update_default(self):
+    cdef void update_default(self) except *:
         cdef:
-            object existed_templates = {}
+            dict existed_templates = {}
             str res
-            string default_key = b''
+            str default_key = ''
 
         with open(self.kt_config) as f:
             existed_templates = json.load(f)
-        print(f'Which template would you like to gen as {color_cyan(b"default")} ? For eg cpp, cc, ...')
+        log(f'Which template would you like to gen as {color_cyan("default")} ? For eg cpp, cc, ...')
         
         for k, v in existed_templates.items():
-            print(f'{k} {color_green(b"(default)") if v["default"] else ""}')
+            log(f'{k} {color_green("(default)") if v["default"] else ""}')
             if v["default"]:
                 default_key = k
         res  = input()
@@ -842,14 +892,14 @@ $%rand%$   Random string with 8 character (including "a-z" "0-9")
         existed_templates[res]["default"] = True
         with open(self.kt_config, 'w') as kt_config:
             json.dump(existed_templates, kt_config, indent=2)
-        print(color_green(b'Yosh, your configuration has been saved'))
+        log(color_green('Yosh, your configuration has been saved'))
 
-    cdef _act(self):
+    cdef void _act(self):
         cdef:
-            string question = color_cyan(b'Select an option:\n')
-            string res
+            str question = color_cyan('Select an option:\n')
+            str res
             int opt
-        question.append(b"""1: Add a template
+        question.append("""1: Add a template
 2: Remove a template
 3: Select a default template
 """)
@@ -865,34 +915,34 @@ $%rand%$   Random string with 8 character (including "a-z" "0-9")
             raise ValueError('Invalid option')
 
 cdef class Open(Action):
-    cdef _act(self):
+    cdef void _act(self) except *:
         webbrowser.open(self.get_problem_url())
 
 cdef class Version(Action):
-    cdef _act(self):
-        print(f'Current version: {color_cyan(_VERSION)}')
+    cdef void _act(self) except *:
+        log(f'Current version: {color_cyan(version)}')
 
 cdef class Update(Action):
-    cdef _act(self):
+    cdef void _act(self) except *:
         cdef:
             object pypi_info 
-            vector[string] releases
-            string current_latest_version
+            list releases
+            str current_latest_version
 
         pypi_info = requests.get(_PYPI_PACKAGE_INFO)
         releases = list(pypi_info.json()['releases'])
         if len(releases) == 0:
-            print(color_red(b'Hmm seems like there is currently no pypi releases :-?'))
+            log(color_red('Hmm seems like there is currently no pypi releases :-?'))
             return
         current_latest_version = releases.back()
-        if current_latest_version != _VERSION:
+        if current_latest_version != VERSION:
             subprocess.check_call([sys.executable, "-m", "pip", "install", "--upgrade", "--no-cache-dir", f"kttool=={current_latest_version}"])
-            print(f'Installed version {color_green(current_latest_version)} successfully!')
+            log(f'Installed version {color_green(current_latest_version)} successfully!')
         else:
-            print(f'You already have the {color_green(b"latest")} version!')
+            log(f'You already have the {color_green("latest")} version!')
 
 
-cdef object map_key_to_class = {
+cdef dict map_key_to_class = {
     'gen': Gen,
     'test': Test,
     'submit': Submit,
@@ -911,7 +961,7 @@ cpdef Action arg_parse(list args):
     return map_key_to_class[args[0]](*args[1:])
 
 
-cpdef exit_gracefully(signum, frame):
+def exit_gracefully(signum, frame):
     original_sigint = signal.getsignal(signal.SIGINT)
     # restore the original signal handler as otherwise evil things will happen
     # in raw_input when CTRL+C is pressed, and our signal handler is not re-entrant
@@ -921,7 +971,7 @@ cpdef exit_gracefully(signum, frame):
             sp.kill()
         except:
             pass
-    print(color_green(b'Great is the art of beginning, but greater is the art of ending.'))
+    log(color_green('Great is the art of beginning, but greater is the art of ending.'))
     sys.exit(1)
     
 

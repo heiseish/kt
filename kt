@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import sys
 import signal
-from ktlib import arg_parse, color_red, color_green, exit_gracefully
+from src.ktlib import arg_parse, color_red, color_green, exit_gracefully
 
 
 if __name__ == '__main__':

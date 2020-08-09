@@ -1,5 +1,6 @@
 from distutils.command.sdist import sdist as _sdist
 from setuptools import setup, find_packages, Extension
+from src.version import version
 import pathlib
 
 try:
@@ -19,8 +20,8 @@ README = (HERE / "README.md").read_text()
 
 extensions = [
     Extension(
-        "ktlib",
-        sources=[f"ktlib.{ext}"],
+        "src.ktlib",
+        sources=[f"src/ktlib.{ext}"],
         extra_compile_args=["-O3", "--std=c++17"],
         language="c++"
     ),
@@ -36,7 +37,7 @@ setup(
     name='kttool',
     cmdclass=cmdclass,
     ext_modules=extensions,
-    version="0.0.6",
+    version=version,
     description="Kattis command line tool",
     long_description=README,
     long_description_content_type="text/markdown",
