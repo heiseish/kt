@@ -129,4 +129,5 @@ dmypy.json
 .pyre/
 
 build.sh
+publish.sh
 Makefile

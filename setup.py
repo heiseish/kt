@@ -1,42 +1,18 @@
-from distutils.command.sdist import sdist as _sdist
-from setuptools import setup, find_packages, Extension
-from src.version import version
+from setuptools import setup, find_packages
+from kttool.version import version
 import pathlib
-
-try:
-    from Cython.Build import cythonize
-    from Cython.Distutils import build_ext
-except ImportError:
-    cythonize = False
-
-import os
-os.environ['CC'] = 'g++'
-os.environ['CXX'] = 'g++'
-
-ext = 'pyx' if cythonize else 'cpp'
+from distutils.command.install import INSTALL_SCHEMES
 
 HERE = pathlib.Path(__file__).parent
 README = (HERE / "README.md").read_text()
 
-extensions = [
-    Extension(
-        "src.ktlib",
-        sources=[f"src/ktlib.{ext}"],
-        extra_compile_args=["-O3", "--std=c++17"],
-        language="c++"
-    ),
-]
+for scheme in INSTALL_SCHEMES.values():
+    scheme['data'] = scheme['purelib']
 
-cmdclass = {}
-
-if cythonize:
-    extensions = cythonize(extensions)
-    cmdclass.update({'build_ext': build_ext})
+required_files = ['kttool/VERSION', 'LICENSE']
 
 setup(
     name='kttool',
-    cmdclass=cmdclass,
-    ext_modules=extensions,
     version=version,
     description="Kattis command line tool",
     long_description=README,
@@ -55,7 +31,8 @@ setup(
     ],
     packages=find_packages(),
     include_package_data=True,
-    package_data = { 'ktlib': ['*.pxd']},
+    package_data={'kttool': required_files},
+    data_files=[('kttool',required_files)],
     install_requires=[
         'requests',
         'bs4',

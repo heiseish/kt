@@ -1,7 +1,10 @@
 #!/usr/bin/env python
 import sys
 import signal
-from src.ktlib import arg_parse, color_red, color_green, exit_gracefully
+from kttool.parser import arg_parse
+from kttool.logger import log_red, log
+from kttool.utils import exit_gracefully
+import traceback
 
 
 if __name__ == '__main__':
@@ -11,4 +14,5 @@ if __name__ == '__main__':
         action = arg_parse(sys.argv[1:])
         action.act()
     except Exception as e:
-        print(color_red(str(e)))
+        log_red(str(e))
+        log(traceback.format_exc())
