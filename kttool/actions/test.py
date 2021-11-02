@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import List, Tuple
 from kttool.base import Action
 import json, subprocess, shlex
-from kttool.logger import color_cyan, color_green, color_red, log, log_cyan
+from kttool.logger import color_cyan, color_green, color_red, log, log_cyan, strike_through
 import re, time, psutil
 from kttool.utils import  make_list_equal, register_subprocess
 
@@ -12,7 +12,7 @@ from kttool.utils import  make_list_equal, register_subprocess
 def compare_entity( lhs: str,  rhs: str) -> Tuple[bool, str]:
     if lhs == rhs:
         return True, f'{lhs} '
-    return False, f'{color_red(lhs)}{color_green(rhs)} '
+    return False, f'{color_red(strike_through(lhs))}{color_green(rhs)} '
 
 
 Sample = namedtuple('Sample', 

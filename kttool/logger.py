@@ -7,7 +7,8 @@ __all__ = [
     'log',
     'log_green',
     'log_cyan',
-    'log_red'
+    'log_red',
+    'strike_through'
 ]
 
 BOLD_SEQ = '\033[1m'
@@ -37,6 +38,14 @@ def color_red(text: str) -> str:
     if not supports_color:
         return text
     return f'{RED}{text}{RESET_SEQ}'
+
+def strike_through(text: str) -> str:
+    if not supports_color:
+        return text
+    result = ''
+    for c in text:
+        result = result + c + '\u0336'
+    return result
 
 
 log = print
