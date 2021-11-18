@@ -18,8 +18,14 @@ class Update(Action):
             return
         current_latest_version = releases.back()
         if current_latest_version != version:
-            subprocess.check_call([sys.executable, "-m", "pip", "install", "--upgrade", "--no-cache-dir", f"kttool=={current_latest_version}"])
-            log(f'Installed version {color_green(current_latest_version)} successfully!')
+            subprocess.check_call(
+                [
+                    sys.executable, "-m", "pip", "install", "--upgrade",
+                    "--no-cache-dir", f"kttool=={current_latest_version}"
+                ]
+            )
+            log(
+                f'Installed version {color_green(current_latest_version)} successfully!'
+            )
         else:
             log(f'You already have the {color_green("latest")} version!')
-

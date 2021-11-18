@@ -17,7 +17,9 @@ def require_login(fn):
     def inner(self: 'Action', *args, **kwargs):
         self.login()
         return fn(self, *args, **kwargs)
+
     return inner
+
 
 class Action(abc.ABC):
     ''' 
@@ -32,11 +34,11 @@ class Action(abc.ABC):
     cookies: Any
     kt_config: Path
 
-    file_name: Optional[Path] 
-    lang: Optional[str] 
+    file_name: Optional[Path]
+    lang: Optional[str]
     pre_script: Optional[str]
-    script: Optional[str] 
-    post_script: Optional[str] 
+    script: Optional[str]
+    post_script: Optional[str]
 
 
 
@@ -44,8 +46,8 @@ class Action(abc.ABC):
         'pre_script', 'script', 'post_script'
 
     def __init__(self, *, cwd: Optional[Path] = None):
-        self.config_path = Path.home() /  '.kattisrc' # kattis config file
-        self.kt_config = Path.home() /  '.ktconfig' # kt tool file
+        self.config_path = Path.home() / '.kattisrc'  # kattis config file
+        self.kt_config = Path.home() / '.ktconfig'  # kt tool file
         self.cfg = None
         self.cwd = cwd or Path().absolute()
         self.cookies = None
@@ -56,7 +58,7 @@ class Action(abc.ABC):
         self.script = None
         self.post_script = None
 
-    def get_url(self,  option: str,  default: str = '') -> str:
+    def get_url(self, option: str, default: str = '') -> str:
         """ Get appropriate urls from kattisrc file
 
         Parameters
@@ -76,7 +78,6 @@ class Action(abc.ABC):
 
         kattis_host = self.cfg.get('kattis', 'hostname')
         return f'https://{kattis_host}/{default}'
-
 
     def read_config_from_file(self) -> None:
         """ kttool deals with 2 config files:
@@ -98,8 +99,10 @@ class Action(abc.ABC):
 
         self.cfg = ConfigParser()
         if not self.config_path.is_file():
-            raise RuntimeError(f'No valid config file at {self.config_path}. '
-            f'Please download it at {KATTIS_RC_URL}')
+            raise RuntimeError(
+                f'No valid config file at {self.config_path}. '
+                f'Please download it at {KATTIS_RC_URL}'
+            )
 
         self.cfg.read(self.config_path)
         username = self.cfg.get('user', 'username')
@@ -113,12 +116,13 @@ class Action(abc.ABC):
         except NoOptionError:
             pass
         if password is None and token is None:
-            raise ConfigError('''\
+            raise ConfigError(
+                '''\
         Your .kattisrc file appears corrupted. It must provide a token (or a
         KATTIS password).
-        Please download a new .kattisrc file''')
+        Please download a new .kattisrc file'''
+            )
         log(f'Username: {color_green(username)}')
-
 
     def login(self) -> None:
         """ Try to login and obtain cookies from succesful signin
@@ -128,7 +132,6 @@ class Action(abc.ABC):
         RuntimeError
             If login fails
         """
-
 
         username = self.cfg.get('user', 'username')
         password = token = ''
@@ -147,7 +150,7 @@ class Action(abc.ABC):
         if token:
             login_args['token'] = token
         login_reply = self.request_post(login_url, data=login_args)
-        
+
         if not login_reply.status_code == 200:
             if login_reply.status_code == 403:
                 err = 'Incorrect username or password/token (403)'
@@ -160,25 +163,22 @@ class Action(abc.ABC):
 
     def get_problem_id(self) -> str:
         # Assuming user is in the folder with the name of the problem id
-        return self.cwd.name 
+        return self.cwd.name
 
     def request_get(self, uri: str) -> requests.Response:
         return requests.get(uri, cookies=self.cookies, headers=HEADERS)
 
-
     def request_post(self, uri: str, *args, **kwargs) -> requests.Response:
-        return requests.post(uri, *args, **kwargs, cookies=self.cookies, headers=HEADERS)
+        return requests.post(
+            uri, *args, **kwargs, cookies=self.cookies, headers=HEADERS
+        )
 
     @require_login
     def get_problem_url(self) -> str:
         domain = f"https://{self.get_url('hostname')}"
         problem_id = self.get_problem_id()
 
-        return os.path.join(
-            domain,
-            'problems',
-            problem_id
-        )
+        return os.path.join(domain, 'problems', problem_id)
 
     def detect_file_name(self) -> None:
         """ Confirm the executable file if there is multiple files that are runnable in current folder
@@ -192,19 +192,20 @@ class Action(abc.ABC):
         opt = 0
         i = 0
         existed_templates = self.load_kt_config()
-        
+
         for k in existed_templates.keys():
-            acceptable_file_ext[MAP_TEMPLATE_TO_PLANG[k].extension] = MAP_TEMPLATE_TO_PLANG[k]
+            acceptable_file_ext[MAP_TEMPLATE_TO_PLANG[k].extension
+                               ] = MAP_TEMPLATE_TO_PLANG[k]
 
         files = [x for x in self.cwd.iterdir() if x.is_file()]
         runnable_files: List[Path] = []
         for f in files:
             if f.suffix[1:] in acceptable_file_ext:
                 runnable_files.append(f)
-        
+
         if not runnable_files:
             raise RuntimeError('Not executable code file detected')
-        
+
         if len(runnable_files) > 1:
             log_cyan('Choose a file to run')
             for i in range(len(runnable_files)):
@@ -212,16 +213,23 @@ class Action(abc.ABC):
             opt = int(input())
             assert 0 <= opt < len(runnable_files), 'Invalid option chosen'
 
-        
         self.file_name = runnable_files[opt]
         alias = acceptable_file_ext[runnable_files[opt].suffix[1:]].alias
-        self.lang = acceptable_file_ext[runnable_files[opt].suffix[1:]].full_name
+        self.lang = acceptable_file_ext[runnable_files[opt].suffix[1:]
+                                       ].full_name
 
         file_name = self.file_name.stem
-        self.pre_script = existed_templates.get(alias, {}).get('pre_script').replace('$%file%$', file_name)
-        self.script = existed_templates.get(alias, {}).get('script').replace('$%file%$', file_name)
-        self.post_script = existed_templates.get(alias, {}).get('post_script').replace('$%file%$', file_name)
-
+        self.pre_script = existed_templates.get(alias,
+                                                {}).get('pre_script').replace(
+                                                    '$%file%$', file_name
+                                                )
+        self.script = existed_templates.get(alias, {}).get('script').replace(
+            '$%file%$', file_name
+        )
+        self.post_script = existed_templates.get(alias,
+                                                 {}).get('post_script').replace(
+                                                     '$%file%$', file_name
+                                                 )
 
     def load_kt_config(self) -> dict:
         if not self.kt_config.is_file():

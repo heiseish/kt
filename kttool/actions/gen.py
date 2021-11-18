@@ -12,14 +12,12 @@ from collections import namedtuple
 from kttool.utils import HEADERS, MAP_TEMPLATE_TO_PLANG
 
 
-
 @dataclass
 class SampleData:
     problem_id: str = ''
     is_in: bool = True
     sample_id: str = ''
     data: str = ''
-
 
 
 def write_samples(sample_data: SampleData) -> None:
@@ -36,20 +34,18 @@ def write_samples(sample_data: SampleData) -> None:
     with open(file_name, 'w+') as f:
         f.write(sample_data.data)
 
+
 class Gen(Action):
     REQUIRED_CONFIG = True
-
     ''' Handle `gen` command for kt_tool '''
     problem_id: str
 
     __slots__ = 'problem_id'
-
-        
     ''' Handle `gen` command for kt_tool '''
     def __init__(self, problem_id: str, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.problem_id = problem_id
-    
+
     def _gen_samples(self) -> None:
         """ Generate sample input file for `self.problem_id`
         The basic flow is to scrape the problem task page and retrieve the relevent fields
@@ -76,9 +72,23 @@ class Gen(Action):
 
         for i in range(len(data)):
             if i & 1:
-                sample_data.append(SampleData(sample_id=i // 2 + 1, data=data[i].text, problem_id=self.problem_id, is_in=False))
+                sample_data.append(
+                    SampleData(
+                        sample_id=i // 2 + 1,
+                        data=data[i].text,
+                        problem_id=self.problem_id,
+                        is_in=False
+                    )
+                )
             else:
-                sample_data.append(SampleData(sample_id=i // 2 + 1, data=data[i].text, problem_id=self.problem_id, is_in=True))
+                sample_data.append(
+                    SampleData(
+                        sample_id=i // 2 + 1,
+                        data=data[i].text,
+                        problem_id=self.problem_id,
+                        is_in=True
+                    )
+                )
 
         assert len(data) % 2 == 0, 'Internal error: Number of sample input '\
             ' is not equal to number of sample output'
@@ -86,19 +96,24 @@ class Gen(Action):
         with ProcessPoolExecutor(max_workers=4) as executor:
             executor.map(write_samples, sample_data)
 
-        log_green(f'Generate {len(sample_data) // 2} sample(s) to {self.problem_id}')
+        log_green(
+            f'Generate {len(sample_data) // 2} sample(s) to {self.problem_id}'
+        )
         if not self.kt_config.is_file():
-            log_red('.ktconfig file has not been set up so no template was generated. '
-            'Please use `kt config` to set up a template file')
+            log_red(
+                '.ktconfig file has not been set up so no template was generated. '
+                'Please use `kt config` to set up a template file'
+            )
             return
-
-        
 
         template_file = self.load_kt_config()
 
         for k, template in template_file.items():
             if template.get('default', False):
-                shutil.copyfile(template.get('path'), f'{self.problem_id}/{self.problem_id}.{MAP_TEMPLATE_TO_PLANG[k].extension}')
+                shutil.copyfile(
+                    template.get('path'),
+                    f'{self.problem_id}/{self.problem_id}.{MAP_TEMPLATE_TO_PLANG[k].extension}'
+                )
                 log_green('Template file has been generated')
                 return
         log_red(f'No default template detected in {self.kt_config}')

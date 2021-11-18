@@ -3,6 +3,7 @@ import webbrowser
 
 from kttool.logger import log
 
+
 class Open(Action):
     REQUIRED_CONFIG = True
 

@@ -6,18 +6,17 @@ from kttool.base import Action
 import json, subprocess, shlex
 from kttool.logger import color_cyan, color_green, color_red, log, log_cyan, strike_through
 import re, time, psutil
-from kttool.utils import  make_list_equal, register_subprocess
+from kttool.utils import make_list_equal, register_subprocess
 
 
-def compare_entity( lhs: str,  rhs: str) -> Tuple[bool, str]:
+def compare_entity(lhs: str, rhs: str) -> Tuple[bool, str]:
     if lhs == rhs:
         return True, f'{lhs} '
     return False, f'{color_red(strike_through(lhs))}{color_green(rhs)} '
 
 
-Sample = namedtuple('Sample', 
-    ['index', 'input_file', 'output_file']
-)
+Sample = namedtuple('Sample', ['index', 'input_file', 'output_file'])
+
 
 class Test(Action):
     REQUIRED_CONFIG = True
@@ -36,18 +35,23 @@ class Test(Action):
             try:
                 with open(sample.output_file, 'r') as f:
                     expected = [l.strip(" \n") for l in f.readlines()]
-                with open(sample.input_file, 'rb') as f:    
+                with open(sample.input_file, 'rb') as f:
                     raw_input = f.read()
                 # log_cyan(f'running {self.script}')
-                p = subprocess.Popen([self.script, '-'], stdin=subprocess.PIPE, stdout=subprocess.PIPE, shell=False, 
-                    preexec_fn=os.setsid)
+                p = subprocess.Popen(
+                    [self.script, '-'],
+                    stdin=subprocess.PIPE,
+                    stdout=subprocess.PIPE,
+                    shell=False,
+                    preexec_fn=os.setsid
+                )
                 register_subprocess(p)
                 proc = psutil.Process(p.pid)
                 mem_used = proc.memory_info().rss / rusage_denom
                 start_time = time.perf_counter()
                 raw_output = p.communicate(raw_input)[0].decode()
                 p.wait()
-                taken = time.perf_counter()  - start_time
+                taken = time.perf_counter() - start_time
                 actual = [z.strip(" \n") for z in raw_output.split('\n')]
                 make_list_equal(actual, expected)
 
@@ -64,15 +68,23 @@ class Test(Action):
                     for j in range(len(ith_line_exp)):
                         lhs = ith_line_exp[j]
                         rhs = ith_line_actual[j]
-                        is_good, now_diff = compare_entity(rhs,lhs)
+                        is_good, now_diff = compare_entity(rhs, lhs)
                         is_ac &= is_good
                         current_diff += now_diff
 
                     diff.append(current_diff)
                 if is_ac:
-                    log(color_green(f'Test Case #{sample.index}: {"Accepted".ljust(13, " ")} ... {taken:.3f} s   {mem_used:.2f} M'))
+                    log(
+                        color_green(
+                            f'Test Case #{sample.index}: {"Accepted".ljust(13, " ")} ... {taken:.3f} s   {mem_used:.2f} M'
+                        )
+                    )
                 else:
-                    log(color_red(f'Test Case #{sample.index}: {"Wrong Answer".ljust(13, " ")} ... {taken:.3f} s   {mem_used:.2f} M'))
+                    log(
+                        color_red(
+                            f'Test Case #{sample.index}: {"Wrong Answer".ljust(13, " ")} ... {taken:.3f} s   {mem_used:.2f} M'
+                        )
+                    )
                     log(color_cyan('--- Input ---'))
                     log(raw_input.decode())
                     log(color_cyan('--- Diff ---'))
@@ -82,22 +94,29 @@ class Test(Action):
             except Exception as e:
                 log(color_red(f'Test case #{sample.index}: Runtime Error {e}'))
 
-    
     def _gather_samples(self) -> List[Sample]:
-        input_files = [x for x in self.cwd.iterdir() if x.is_file() and x.stem.startswith('in')]
-        output_files = [x for x in self.cwd.iterdir() if x.is_file() and x.stem.startswith('ans')]
+        input_files = [
+            x for x in self.cwd.iterdir()
+            if x.is_file() and x.stem.startswith('in')
+        ]
+        output_files = [
+            x for x in self.cwd.iterdir()
+            if x.is_file() and x.stem.startswith('ans')
+        ]
         usable_samples: List[Sample] = []
 
-
-        pattern = re.compile(r"\d+")
+        in_pattern = re.compile("in(\d+).txt")
+        ans_pattern = re.compile("ans(\d+).txt")
         for input_file in input_files:
-            idx = int(pattern.search(str(input_file)).group(0))
+            idx = int(in_pattern.search(input_file.name).group(1))
             for output_file in output_files:
-                if idx == int(pattern.search(str(output_file)).group(0)):
-                    usable_samples.append(Sample(
-                        index=idx, 
-                        input_file=input_file, 
-                        output_file=output_file)
+                if idx == int(ans_pattern.search(output_file.name).group(1)):
+                    usable_samples.append(
+                        Sample(
+                            index=idx,
+                            input_file=input_file,
+                            output_file=output_file
+                        )
                     )
                     break
         # run test from ascending number of file index
@@ -121,7 +140,7 @@ class Test(Action):
             subprocess.check_call(shlex.split(self.pre_script))
 
         self._compare_samples(usable_samples)
-        
+
         if self.post_script:
             log_cyan(f'running {self.post_script}')
             subprocess.check_call(shlex.split(self.post_script))

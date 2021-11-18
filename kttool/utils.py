@@ -11,6 +11,7 @@ __test_subprocesses = []
 
 CATCH_PHRASE = 'Great is the art of beginning, but greater is the art of ending.'
 
+
 def exit_gracefully(signum: signal.Signals, frame) -> NoReturn:
     global test_subprocesses
     original_sigint = signal.getsignal(signal.SIGINT)
@@ -25,11 +26,12 @@ def exit_gracefully(signum: signal.Signals, frame) -> NoReturn:
     log_green(CATCH_PHRASE)
     sys.exit(1)
 
+
 def register_subprocess(p: subprocess.Popen):
     __test_subprocesses.append(p)
 
 
-def ask_with_default(qu: str,  default_val: str = '') -> str:
+def ask_with_default(qu: str, default_val: str = '') -> str:
     """ Print out `qu` to console and ask for input value from user
     If no input was provided by user, `default_val` will be returned instead
 
@@ -53,11 +55,8 @@ def ask_with_default(qu: str,  default_val: str = '') -> str:
         return default_val
     return ret
 
-def make_list_equal(
-    lhs: list, 
-    rhs: list, 
-    pad_element: str = ''
-) -> None:
+
+def make_list_equal(lhs: list, rhs: list, pad_element: str = '') -> None:
     """ Make two vector of string equation in length by padding with `pad_element`
 
     Parameters
@@ -70,7 +69,7 @@ def make_list_equal(
         string to fill the shorter vector, by default ''
     """
     delta_size = abs(len(lhs) - len(rhs))
-    delta_list = [ pad_element ] * delta_size
+    delta_list = [pad_element] * delta_size
     if len(lhs) < len(rhs):
         lhs.extend(delta_list)
     else:
@@ -80,55 +79,46 @@ def make_list_equal(
 KATTIS_RC_URL = 'https://open.kattis.com/download/kattisrc'
 HEADERS = {'User-Agent': 'kt'}
 
-PLanguage = namedtuple('ProgrammingLanguage', 
+PLanguage = namedtuple(
+    'ProgrammingLanguage',
     ['alias', 'extension', 'full_name', 'pre_script', 'script', 'post_script']
 )
 
-
 MAP_TEMPLATE_TO_PLANG = {
-    'c': PLanguage('c', 'c','C', 
-        'gcc $%file%$.c -o $%file%$.out',
-        './$%file%$.out',
-        'rm $%file%$.out'
-    ),
-    'cpp': PLanguage('cpp', 'cpp', 'C++',
-        'g++ -std=c++14 -D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC -O3 $%file%$.cpp -o $%file%$.out',
-        './$%file%$.out',
-        'rm $%file%$.out'
-    ),
-    'cc': PLanguage('cc', 'cc', 'C++', 
-        'g++ -std=c++14 -D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC -O3 $%file%$.cc -o $%file%$.out',
-        './$%file%$.out',
-        'rm $%file%$.out'
-    ),
-    'go': PLanguage('go', 'go', 'Go', 
-        'go build -o $%file%$',
-        './$%file%$',
-        'rm $%file%$'
-    ),
-    'java': PLanguage('java', 'java', 'Java', 
-        'javac *.java',
-        './$%file%$',
-        'rm $%file%$'
-    ),
-    'js': PLanguage('js', 'js', 'JavaScript', 
-        '',
-        'node $%file%$.js',
-        ''
-    ),
-    'rs': PLanguage('rs', 'rs', 'Rust', 
-        'rustc $%file%$.rs',
-        './$%file%$',
-        'rm $%file%$'
-    ),
-    'py2': PLanguage('py2', 'py', 'Python 2', 
-        '',
-        'python2 $%file%$.py',
-        ''
-    ),
-    'py3': PLanguage('py3', 'py', 'Python 3', 
-        '',
-        'python3 $%file%$.py',
-        ''
-    )
+    'c':
+        PLanguage(
+            'c', 'c', 'C', 'gcc $%file%$.c -o $%file%$.out', './$%file%$.out',
+            'rm $%file%$.out'
+        ),
+    'cpp':
+        PLanguage(
+            'cpp', 'cpp', 'C++',
+            'g++ -std=c++14 -D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC -O3 $%file%$.cpp -o $%file%$.out',
+            './$%file%$.out', 'rm $%file%$.out'
+        ),
+    'cc':
+        PLanguage(
+            'cc', 'cc', 'C++',
+            'g++ -std=c++14 -D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC -O3 $%file%$.cc -o $%file%$.out',
+            './$%file%$.out', 'rm $%file%$.out'
+        ),
+    'go':
+        PLanguage(
+            'go', 'go', 'Go', 'go build -o $%file%$', './$%file%$',
+            'rm $%file%$'
+        ),
+    'java':
+        PLanguage(
+            'java', 'java', 'Java', 'javac *.java', './$%file%$', 'rm $%file%$'
+        ),
+    'js':
+        PLanguage('js', 'js', 'JavaScript', '', 'node $%file%$.js', ''),
+    'rs':
+        PLanguage(
+            'rs', 'rs', 'Rust', 'rustc $%file%$.rs', './$%file%$', 'rm $%file%$'
+        ),
+    'py2':
+        PLanguage('py2', 'py', 'Python 2', '', 'python2 $%file%$.py', ''),
+    'py3':
+        PLanguage('py3', 'py', 'Python 3', '', 'python3 $%file%$.py', '')
 }

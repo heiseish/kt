@@ -1,14 +1,8 @@
 from .context import supports_color
 
 __all__ = [
-    'color_cyan',
-    'color_green',
-    'color_red',
-    'log',
-    'log_green',
-    'log_cyan',
-    'log_red',
-    'strike_through'
+    'color_cyan', 'color_green', 'color_red', 'log', 'log_green', 'log_cyan',
+    'log_red', 'strike_through'
 ]
 
 BOLD_SEQ = '\033[1m'
@@ -21,6 +15,7 @@ BLUE = '\033[6;94m'
 MAGENTA = '\033[6;95m'
 CYAN = '\033[6;96m'
 WHITE = '\033[6;97m'
+
 
 def color_cyan(text: str) -> str:
     if not supports_color:
@@ -39,6 +34,7 @@ def color_red(text: str) -> str:
         return text
     return f'{RED}{text}{RESET_SEQ}'
 
+
 def strike_through(text: str) -> str:
     if not supports_color:
         return text
@@ -49,6 +45,7 @@ def strike_through(text: str) -> str:
 
 
 log = print
+
 
 def log_green(*args, **kwargs) -> None:
     log(color_green(*args, **kwargs))

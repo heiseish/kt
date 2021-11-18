@@ -32,13 +32,7 @@ setup(
     packages=find_packages(),
     include_package_data=True,
     package_data={'kttool': required_files},
-    data_files=[('kttool',required_files)],
-    install_requires=[
-        'requests',
-        'bs4',
-        'emoji',
-        'reprint',
-        'psutil'
-    ],
+    data_files=[('kttool', required_files)],
+    install_requires=['requests', 'bs4', 'emoji', 'reprint', 'psutil'],
     scripts=['kt']
 )

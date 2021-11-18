@@ -16,7 +16,7 @@ map_key_to_class = {
     'open': Open,
     'version': Version,
     'update': Update
-} 
+}
 
 
 def arg_parse(args: List[str]) -> Action:
@@ -24,5 +24,7 @@ def arg_parse(args: List[str]) -> Action:
     if len(args) == 0:
         raise ValueError(f'No command provided to kt')
     if args[0] not in map_key_to_class:
-        raise ValueError(f'First argument should be one of {list(map_key_to_class.keys())}')
+        raise ValueError(
+            f'First argument should be one of {list(map_key_to_class.keys())}'
+        )
     return map_key_to_class[args[0]](*args[1:])

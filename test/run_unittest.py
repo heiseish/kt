@@ -5,7 +5,7 @@ import os
 import shutil
 
 
-class Tester(unittest.TestCase): 
+class Tester(unittest.TestCase):
     def test_color(self):
         self.assertEqual(color_cyan('hi'), '\x1b[6;96mhi\x1b[0m')
         self.assertEqual(color_green('universe'), '\x1b[6;92muniverse\x1b[0m')
@@ -24,13 +24,13 @@ class Tester(unittest.TestCase):
         self.assertEqual(lhs.size(), rhs.size())
         self.assertEqual('sixth', lhs.back())
 
-    def test_base_action (self):
+    def test_base_action(self):
         action = Action()
         action.read_config_from_file()
         res = action.get_url('kattis', 'hostname')
         self.assertEqual(res, 'https://open.kattis.com/hostname')
-    
-    def test_write_sample (self):
+
+    def test_write_sample(self):
         data_in = (1, '104', 'biggest', True)
         data_out = (1, '1 24 52', 'biggest', False)
         os.makedirs('biggest', exist_ok=True)
@@ -46,15 +46,20 @@ class Tester(unittest.TestCase):
             self.assertEqual(f.read(), '1 24 52')
         shutil.rmtree('biggest')
 
-    def test_gen_action (self):
+    def test_gen_action(self):
         action = Gen('oddmanout')
         action.act()
         self.assertTrue(os.path.exists('./oddmanout/ans1.txt'))
         self.assertTrue(os.path.exists('./oddmanout/in1.txt'))
         with open('./oddmanout/in1.txt', 'r') as f:
-            self.assertEqual(f.read(), """3\n3\n1 2147483647 2147483647\n5\n3 4 7 4 3\n5\n2 10 2 10 5\n""")
+            self.assertEqual(
+                f.read(),
+                """3\n3\n1 2147483647 2147483647\n5\n3 4 7 4 3\n5\n2 10 2 10 5\n"""
+            )
         with open('./oddmanout/ans1.txt', 'r') as f:
-            self.assertEqual(f.read(), """Case #1: 1\nCase #2: 7\nCase #3: 5\n""")
+            self.assertEqual(
+                f.read(), """Case #1: 1\nCase #2: 7\nCase #3: 5\n"""
+            )
         shutil.rmtree('oddmanout')
 
     def test_compare_entity(self):
@@ -69,5 +74,3 @@ class Tester(unittest.TestCase):
         res, diff = compare_entity(lhs, rhs, diff)
         self.assertEqual(res, True)
         self.assertEqual(diff, 'Tesla ')
-
-
