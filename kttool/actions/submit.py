@@ -99,7 +99,7 @@ class Submit(Action):
         output_lines['running time      '] = f'{run_time}'
         output_lines['submission id     '] = self.submission_id
         output_lines['submission result '] = f'{_status}'
-        output_lines['test cases        '] = f"{emoji.emojize(' '.join(res))}"
+        output_lines['test cases        '] = f"{emoji.emojize(' '.join(res), use_aliases=True)}"
         return finished
 
     def _render_result(self, submission_url_ret: str) -> None:
