@@ -16,7 +16,7 @@ class Update(Action):
         if len(releases) == 0:
             log_red('Hmm seems like there is currently no pypi releases :-?')
             return
-        current_latest_version = releases.back()
+        current_latest_version = releases[-1]
         if current_latest_version != version:
             subprocess.check_call(
                 [
