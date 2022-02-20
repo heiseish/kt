@@ -7,7 +7,7 @@ import json, subprocess, shlex
 from kttool.logger import color_cyan, color_green, color_red, log, log_cyan, strike_through
 import re, time, psutil
 from kttool.utils import make_list_equal, register_subprocess
-
+import tempfile
 
 def compare_entity(lhs: str, rhs: str) -> Tuple[bool, str]:
     if lhs == rhs:
@@ -17,6 +17,10 @@ def compare_entity(lhs: str, rhs: str) -> Tuple[bool, str]:
 
 Sample = namedtuple('Sample', ['index', 'input_file', 'output_file'])
 
+def get_temp_log_file() -> Path:
+    p = Path(tempfile.gettempdir())
+    p.mkdir(parents=True, exist_ok=True)
+    return p / 'kt_test.log'
 
 class Test(Action):
     REQUIRED_CONFIG = True
@@ -39,7 +43,7 @@ class Test(Action):
                     raw_input = f.read()
                 # log_cyan(f'running {self.script}')
                 p = subprocess.Popen(
-                    [self.script, '-'],
+                    shlex.split(f'{self.script} -'),
                     stdin=subprocess.PIPE,
                     stdout=subprocess.PIPE,
                     shell=False,
@@ -91,8 +95,14 @@ class Test(Action):
                     for i in range(len(diff)):
                         log(diff[i])
 
+            except subprocess.CalledProcessError as e:
+                log(color_red(f'Test case #{sample.index}: Runtime Error {e!r}'))
             except Exception as e:
-                log(color_red(f'Test case #{sample.index}: Runtime Error {e}'))
+                import traceback
+                tmp_file = get_temp_log_file()
+                with open(tmp_file, 'w+')  as f:
+                    f.write(traceback.format_exc())
+                log(color_red(f'Test case #{sample.index}: Internal Error {e!r}. More info at {tmp_file}'))
 
     def _gather_samples(self) -> List[Sample]:
         input_files = [

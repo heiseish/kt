@@ -1,8 +1,13 @@
-from src.ktlib import *
+from argparse import Action
+from kttool.actions.gen import write_samples
+from kttool.actions.test import compare_entity
 import unittest
 import unittest.mock as mock
 import os
 import shutil
+
+from kttool.logger import *
+from kttool.utils import make_list_equal
 
 
 class Tester(unittest.TestCase):
