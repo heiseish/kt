@@ -4,9 +4,9 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 import requests
 import os
-from src.logger import color_green, log, log_cyan, log_red
+from kttool.logger import color_green, log, log_cyan, log_red
 import json
-from src.utils import HEADERS, KATTIS_RC_URL, MAP_TEMPLATE_TO_PLANG, PLanguage
+from kttool.utils import HEADERS, KATTIS_RC_URL, MAP_TEMPLATE_TO_PLANG, PLanguage
 
 
 class ConfigError(Exception):
