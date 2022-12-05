@@ -12,7 +12,7 @@ from collections import namedtuple
 from kttool.utils import HEADERS, MAP_TEMPLATE_TO_PLANG
 
 
-@dataclass
+@dataclass(frozen=True)
 class SampleData:
     problem_id: str = ''
     is_in: bool = True

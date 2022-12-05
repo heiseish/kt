@@ -151,7 +151,7 @@ class Action(abc.ABC):
             login_args['token'] = token
         login_reply = self.request_post(login_url, data=login_args)
 
-        if not login_reply.status_code == 200:
+        if login_reply.status_code != 200:
             if login_reply.status_code == 403:
                 err = 'Incorrect username or password/token (403)'
             elif login_reply.status_code == 404:

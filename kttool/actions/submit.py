@@ -58,8 +58,10 @@ class Submit(Action):
         for res in result:
             _class = res.get('class', None)
             if _class:
-                if _class[0] == 'accepted':
+                if 'is-accepted' in _class:
                     ac_ct += 1
+                elif 'is-empty' in _class:
+                    continue
                 else:  # rejected
                     rejected = True
                     is_ac = False
@@ -99,7 +101,8 @@ class Submit(Action):
         output_lines['running time      '] = f'{run_time}'
         output_lines['submission id     '] = self.submission_id
         output_lines['submission result '] = f'{_status}'
-        output_lines['test cases        '] = f"{emoji.emojize(' '.join(res), use_aliases=True)}"
+        output_lines['test cases        '
+                    ] = f"{emoji.emojize(' '.join(res), use_aliases=True)}"
         return finished
 
     def _render_result(self, submission_url_ret: str) -> None:
@@ -110,7 +113,6 @@ class Submit(Action):
         submission_url_ret : str
             url for the submission to be checked
         """
-
         time_out = 60
         cur_time = 0
         done = False
@@ -122,17 +124,19 @@ class Submit(Action):
                     self.login()
                     page = self.request_get(submission_url_ret)
                     soup = BeautifulSoup(page.content, 'html.parser')
-                    submission_data = soup.find('div', class_='testcases')
+                    submission_data = soup.find(
+                        'div', class_='status testcase testcase-row'
+                    )
                     if submission_data is not None:
-                        submission_ret = submission_data.find_all('span')
-                        status_ret = soup.find('td', class_='status middle'
-                                              ).find('span').text
-                        runtime_ret = soup.find(
-                            'td', class_='runtime middle'
-                        ).text
+                        status_ret = soup.find(
+                            'div', class_='status is-status-accepted'
+                        ).next_element.next_element
+
+                        runtime_ret = status_ret.next_element
+
                         done = self.is_finished(
-                            output_lines, submission_ret, status_ret,
-                            runtime_ret
+                            output_lines, submission_data, status_ret.text,
+                            runtime_ret.text
                         )
                 except Exception as e:
                     log_red(f'Internal error: {e!r}')
@@ -179,6 +183,6 @@ class Submit(Action):
         self.submission_id = re.search(
             r'Submission ID: (\d+)', submit_response
         ).group(1)
-        log_green('Submission successful')
+        log_green(f'Submission successful -- id {self.submission_id}')
         submission_url_ret = f'{submissions_url}/{self.submission_id}'
         self._render_result(submission_url_ret)

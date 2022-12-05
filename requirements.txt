@@ -1,6 +1,5 @@
-cython
 requests
-bs4
-emoji
-reprint
+bs4==0.0.1
+emoji==0.6.0
+reprint==0.5.2
 psutil
