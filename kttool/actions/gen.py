@@ -46,7 +46,7 @@ class Gen(Action):
         super().__init__(*args, **kwargs)
         self.problem_id = problem_id
 
-    def _gen_samples(self) -> None:
+    def _generate_samples(self) -> None:
         """ Generate sample input file for `self.problem_id`
         The basic flow is to scrape the problem task page and retrieve the relevent fields
         Generate the sample files to problem id folder
@@ -60,7 +60,6 @@ class Gen(Action):
         + distinctivecharacter/ans2.txt
         - Generate a template file (distinctivecharacter.cpp) if a template file is provided in the .ktconfig file
         """
-        template_file = {}
         sample_data = []
         i = 0
 
@@ -99,6 +98,14 @@ class Gen(Action):
         log_green(
             f'Generate {len(sample_data) // 2} sample(s) to {self.problem_id}'
         )
+
+    def get_problem_id(self) -> str:
+        return self.problem_id
+
+    def _generate_template_file(self):
+        """_summary_
+        """
+        template_file = {}
         if not self.kt_config.is_file():
             log_red(
                 '.ktconfig file has not been set up so no template was generated. '
@@ -109,20 +116,19 @@ class Gen(Action):
         template_file = self.load_kt_config()
 
         for k, template in template_file.items():
-            if template.get('default', False):
-                shutil.copyfile(
-                    template.get('path'),
-                    f'{self.problem_id}/{self.problem_id}.{MAP_TEMPLATE_TO_PLANG[k].extension}'
-                )
+            if template.get('default', None):
+                template_file_location = template.get('path')
+                if not Path(template_file_location).is_file():
+                    continue
+                target_location = f'{self.problem_id}/{self.problem_id}.{MAP_TEMPLATE_TO_PLANG[k].extension}'
+                shutil.copyfile(template_file_location, target_location)
                 log_green('Template file has been generated')
                 return
         log_red(f'No default template detected in {self.kt_config}')
-
-    def get_problem_id(self) -> str:
-        return self.problem_id
 
     def _act(self) -> None:
         log(f'Problem is {self.problem_id}')
         problem_dir = self.cwd / self.problem_id
         problem_dir.mkdir(parents=True, exist_ok=True)
-        self._gen_samples()
+        self._generate_samples()
+        self._generate_template_file()

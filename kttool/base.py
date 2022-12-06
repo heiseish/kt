@@ -251,8 +251,8 @@ class Action(abc.ABC):
         raise NotImplementedError()
 
     def act(self) -> None:
-        ''' Python wrapper function to call cython private method _act
-        '''
+        """Main entry to execute the command
+        """
         if self.REQUIRED_CONFIG:
             self.read_config_from_file()
         self._act()
