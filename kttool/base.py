@@ -15,8 +15,15 @@ class ConfigError(Exception):
 
 def require_login(fn):
     def inner(self: 'Action', *args, **kwargs):
-        self.login()
-        return fn(self, *args, **kwargs)
+        did_login = False
+        if not self.is_logged_in:
+            did_login = True
+            self.login()
+        ret = fn(self, *args, **kwargs)
+        if did_login:
+            # poor man way to "timeout" the login attempt and invalidate the cookies
+            self.is_logged_in = False
+        return ret
 
     return inner
 
@@ -39,11 +46,11 @@ class Action(abc.ABC):
     pre_script: Optional[str]
     script: Optional[str]
     post_script: Optional[str]
-
+    is_logged_in: bool
 
 
     __slots__ = 'cwd', 'config_path', 'cfg', 'cookies', 'kt_config', 'file_name', 'lang', \
-        'pre_script', 'script', 'post_script'
+        'pre_script', 'script', 'post_script', 'is_logged_in'
 
     def __init__(self, *, cwd: Optional[Path] = None):
         self.config_path = Path.home() / '.kattisrc'  # kattis config file
@@ -57,6 +64,7 @@ class Action(abc.ABC):
         self.pre_script = None
         self.script = None
         self.post_script = None
+        self.is_logged_in = False
 
     def get_url(self, option: str, default: str = '') -> str:
         """ Get appropriate urls from kattisrc file
@@ -160,6 +168,7 @@ class Action(abc.ABC):
                 err = f'Status code: {login_reply.status_code}'
             raise RuntimeError(f'Login failed. {err}')
         self.cookies = login_reply.cookies
+        self.is_logged_in = True
 
     def get_problem_id(self) -> str:
         # Assuming user is in the folder with the name of the problem id
@@ -177,7 +186,6 @@ class Action(abc.ABC):
     def get_problem_url(self) -> str:
         domain = f"https://{self.get_url('hostname')}"
         problem_id = self.get_problem_id()
-
         return os.path.join(domain, 'problems', problem_id)
 
     def detect_file_name(self) -> None:
