@@ -130,4 +130,5 @@ dmypy.json
 
 build.sh
 publish.sh
+run_tests.sh
 Makefile
