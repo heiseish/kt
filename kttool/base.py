@@ -52,7 +52,6 @@ class Action(abc.ABC):
     post_script: Optional[str]
     is_logged_in: bool
 
-
     __slots__ = 'cwd', 'config_path', 'cfg', 'cookies', 'kt_config', 'file_name', 'lang', \
         'pre_script', 'script', 'post_script', 'is_logged_in'
 

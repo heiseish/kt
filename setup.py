@@ -9,7 +9,9 @@ README = (HERE / "README.md").read_text()
 for scheme in INSTALL_SCHEMES.values():
     scheme['data'] = scheme['purelib']
 
-required_files = ['kttool/VERSION', 'LICENSE']
+required_files = ['kttool/VERSION', 'LICENSE', 'requirements.txt']
+with open('requirements.txt') as f:
+    deps = f.read().splitlines()
 
 setup(
     name='kttool',
@@ -33,6 +35,6 @@ setup(
     include_package_data=True,
     package_data={'kttool': required_files},
     data_files=[('kttool', required_files)],
-    install_requires=['requests', 'bs4', 'emoji', 'reprint', 'psutil'],
+    install_requires=deps,
     scripts=['kt']
 )
