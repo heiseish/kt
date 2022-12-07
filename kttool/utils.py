@@ -1,10 +1,10 @@
-from collections import namedtuple
-from pathlib import Path
 import signal
 import subprocess
 import sys
+from collections import namedtuple
+from pathlib import Path
 from typing import NoReturn, Union
-from dataclasses import dataclass
+import shlex
 from .logger import color_cyan, log_green
 
 __test_subprocesses = []
@@ -27,8 +27,11 @@ def exit_gracefully(signum: signal.Signals, frame) -> NoReturn:
     sys.exit(1)
 
 
-def register_subprocess(p: subprocess.Popen):
+def launch_subprocess(*args, **kwargs) -> subprocess.Popen:
+    global __test_subprocesses
+    p = subprocess.Popen(*args, **kwargs)
     __test_subprocesses.append(p)
+    return p
 
 
 def ask_with_default(qu: str, default_val: str = '') -> str:

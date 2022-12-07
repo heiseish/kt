@@ -1,6 +1,8 @@
-from kttool.version import version
-from kttool.base import Action
-from kttool.logger import color_cyan, log
+from ..version import version
+from ..base import Action
+from ..logger import color_cyan, log
+
+__all__ = ['Version']
 
 
 class Version(Action):
