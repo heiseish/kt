@@ -118,7 +118,9 @@ MAP_TEMPLATE_TO_PLANG = {
         PLanguage('js', 'js', 'JavaScript', '', 'node $%file%$.js', ''),
     'rs':
         PLanguage(
-            'rs', 'rs', 'Rust', 'rustc $%file%$.rs', './$%file%$', 'rm $%file%$'
+            'rs', 'rs', 'Rust',
+            'rustc -O --crate-type bin --edition=2018 $%file%$.rs',
+            './$%file%$', 'rm $%file%$'
         ),
     'py2':
         PLanguage('py2', 'py', 'Python 2', '', 'python2 $%file%$.py', ''),
