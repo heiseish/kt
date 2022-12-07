@@ -1,17 +1,18 @@
-from pathlib import Path
-from typing import List, Optional
-from kttool.base import Action, require_login
-import requests
-import bs4
-from bs4 import BeautifulSoup
-from dataclasses import dataclass
-from concurrent.futures import ProcessPoolExecutor
 import json
-from kttool.logger import log, log_green, log_red
 import shutil
 from collections import namedtuple
+from concurrent.futures import ProcessPoolExecutor
+from dataclasses import dataclass
+from pathlib import Path
+from typing import List, Optional
 
-from kttool.utils import HEADERS, MAP_TEMPLATE_TO_PLANG
+import bs4
+import requests
+from bs4 import BeautifulSoup
+
+from ..base import Action, require_login
+from ..logger import log, log_green, log_red
+from ..utils import HEADERS, MAP_TEMPLATE_TO_PLANG
 
 __all__ = ['Gen']
 
@@ -119,7 +120,7 @@ class Gen(Action):
             f'Generate {len(sample_data) // 2} sample(s) to {self.problem_id}'
         )
 
-    def get_problem_id(self) -> str:
+    def _get_problem_id(self) -> str:
         return self.problem_id
 
     def _generate_template_file(self):
@@ -138,9 +139,12 @@ class Gen(Action):
         for k, template in template_file.items():
             if template.get('default', None):
                 template_file_location = template.get('path')
-                if not Path(template_file_location).is_file():
+                if not template_file_location or not Path(
+                    template_file_location
+                ).is_file():
                     continue
-                target_location = f'{self.problem_id}/{self.problem_id}.{MAP_TEMPLATE_TO_PLANG[k].extension}'
+                target_location = self.cwd / f'{self.problem_id}/{self.problem_id}.{MAP_TEMPLATE_TO_PLANG[k].extension}'
+                target_location.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copyfile(template_file_location, target_location)
                 log_green('Template file has been generated')
                 return

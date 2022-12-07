@@ -1,17 +1,18 @@
 import subprocess
-from kttool.version import version
-from kttool.base import Action
-from kttool.logger import color_cyan, color_green, log, log_red
+from ..version import version
+from ..base import Action
+from ..logger import color_cyan, color_green, log, log_red
 import requests
 import sys
 
-_PYPI_PACKAGE_INFO = 'https://pypi.org/pypi/kttool/json'
+__all__ = ['Update']
 
 
 class Update(Action):
-    def _act(self) -> None:
+    _PYPI_PACKAGE_INFO = 'https://pypi.org/pypi/kttool/json'
 
-        pypi_info = requests.get(_PYPI_PACKAGE_INFO)
+    def _act(self) -> None:
+        pypi_info = requests.get(self._PYPI_PACKAGE_INFO)
         releases = list(pypi_info.json()['releases'])
         if len(releases) == 0:
             log_red('Hmm seems like there is currently no pypi releases :-?')

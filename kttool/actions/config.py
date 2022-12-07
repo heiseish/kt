@@ -1,11 +1,11 @@
-import json
-import os
-from kttool.logger import log
 from pathlib import Path
-import subprocess
-from kttool.base import Action
-from kttool.logger import color_cyan, color_green, color_red, log_green
-from kttool.utils import MAP_TEMPLATE_TO_PLANG, ask_with_default
+import readline, glob, os, json
+from ..logger import log
+from ..base import Action
+from ..logger import color_cyan, color_green, color_red, log_green
+from ..utils import MAP_TEMPLATE_TO_PLANG, PLanguage, ask_with_default
+
+__all__ = ['Config']
 
 
 class Config(Action):
@@ -49,9 +49,7 @@ $%rand%$   Random string with 8 character (including "a-z" "0-9")
         ret = int(res)
         assert 1 <= ret < idx, 'Invalid input'
 
-        selected_lang = selectable_lang[ret][1]
-
-        import readline, glob
+        selected_lang: PLanguage = selectable_lang[ret][1]
 
         def complete(text, state):
             return (glob.glob(os.path.expanduser(text) + '*') + [None])[state]
@@ -59,7 +57,14 @@ $%rand%$   Random string with 8 character (including "a-z" "0-9")
         readline.set_completer_delims(' \t\n;')
         readline.parse_and_bind("tab: complete")
         readline.set_completer(complete)
-        options['path'] = os.path.expanduser(input('Path to template file: '))
+        options['path'] = os.path.expanduser(
+            ask_with_default(
+                'Path to template file: ',
+                default_val=self._fetch_default_template_file(
+                    selected_lang.extension
+                )
+            )
+        )
         options['pre_script'] = ask_with_default(
             'Pre-script', selected_lang.pre_script
         )
@@ -76,9 +81,21 @@ $%rand%$   Random string with 8 character (including "a-z" "0-9")
             f'Yosh, your configuration has been saved to {self.kt_config}'
         )
 
+    @staticmethod
+    def _fetch_default_template_file(extension: str) -> str:
+        template_file = Path(
+            __file__
+        ).parent.parent / 'default_templates' / f'template.{extension}'
+        if template_file.is_file():
+            return str(template_file.absolute())
+        return ''
+
     def remove_template(self) -> None:
         ''' Remove a template from ktconfig file'''
         existed_templates = self.load_kt_config()
+        if not existed_templates:
+            log('No existing templates')
+            return
 
         log(
             f'Which template would you like to {color_red("delete")} ? For eg cpp, cc, ...'
@@ -132,4 +149,4 @@ $%rand%$   Random string with 8 character (including "a-z" "0-9")
         elif opt == 3:
             self.update_default()
         else:
-            raise ValueError('Invalid option')
+            raise ValueError(f'Invalid option. Valid only [1-3]')

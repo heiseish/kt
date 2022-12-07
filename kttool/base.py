@@ -1,19 +1,23 @@
-from configparser import ConfigParser, NoOptionError
 import abc
-from pathlib import Path
-from typing import Any, Dict, List, Optional
-import requests
-import os
-from kttool.logger import color_green, log, log_cyan, log_red
 import json
-from kttool.utils import HEADERS, KATTIS_RC_URL, MAP_TEMPLATE_TO_PLANG, PLanguage
+import os
+from configparser import ConfigParser, NoOptionError
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Callable
+
+import requests
+
+from kttool.logger import color_green, log, log_cyan, log_red
+from kttool.utils import (
+    HEADERS, KATTIS_RC_URL, MAP_TEMPLATE_TO_PLANG, PLanguage, ask_with_default
+)
 
 
 class ConfigError(Exception):
     pass
 
 
-def require_login(fn):
+def require_login(fn: Callable) -> Callable:
     def inner(self: 'Action', *args, **kwargs):
         did_login = False
         if not self.is_logged_in:
@@ -157,7 +161,7 @@ class Action(abc.ABC):
             login_args['password'] = password
         if token:
             login_args['token'] = token
-        login_reply = self.request_post(login_url, data=login_args)
+        login_reply = self._request_post(login_url, data=login_args)
 
         if login_reply.status_code != 200:
             if login_reply.status_code == 403:
@@ -170,25 +174,24 @@ class Action(abc.ABC):
         self.cookies = login_reply.cookies
         self.is_logged_in = True
 
-    def get_problem_id(self) -> str:
+    def _get_problem_id(self) -> str:
         # Assuming user is in the folder with the name of the problem id
         return self.cwd.name
 
-    def request_get(self, uri: str) -> requests.Response:
+    def _request_get(self, uri: str) -> requests.Response:
         return requests.get(uri, cookies=self.cookies, headers=HEADERS)
 
-    def request_post(self, uri: str, *args, **kwargs) -> requests.Response:
+    def _request_post(self, uri: str, *args, **kwargs) -> requests.Response:
         return requests.post(
             uri, *args, **kwargs, cookies=self.cookies, headers=HEADERS
         )
 
-    @require_login
     def get_problem_url(self) -> str:
         domain = f"https://{self.get_url('hostname')}"
-        problem_id = self.get_problem_id()
+        problem_id = self._get_problem_id()
         return os.path.join(domain, 'problems', problem_id)
 
-    def detect_file_name(self) -> None:
+    def _detect_code_files(self) -> bool:
         """ Confirm the executable file if there is multiple files that are runnable in current folder
 
         Raises
@@ -212,14 +215,17 @@ class Action(abc.ABC):
                 runnable_files.append(f)
 
         if not runnable_files:
-            raise RuntimeError('Not executable code file detected')
+            log_red('No executable code files detected')
+            return False
 
         if len(runnable_files) > 1:
             log_cyan('Choose a file to run')
             for i in range(len(runnable_files)):
                 log(f'  {i}: {runnable_files[i].file_name}')
-            opt = int(input())
-            assert 0 <= opt < len(runnable_files), 'Invalid option chosen'
+            opt = int(ask_with_default('Choose a file to run', default_val='0'))
+            if not (0 <= opt < len(runnable_files)):
+                log_red('Invalid option chosen')
+                return False
 
         self.file_name = runnable_files[opt]
         alias = acceptable_file_ext[runnable_files[opt].suffix[1:]].alias
@@ -238,6 +244,7 @@ class Action(abc.ABC):
                                                  {}).get('post_script').replace(
                                                      '$%file%$', file_name
                                                  )
+        return True
 
     def load_kt_config(self) -> dict:
         if not self.kt_config.is_file():
