@@ -10,6 +10,9 @@ for scheme in INSTALL_SCHEMES.values():
     scheme['data'] = scheme['purelib']
 
 required_files = ['kttool/VERSION', 'LICENSE', 'requirements.txt']
+for p in (pathlib.Path('kttool') / 'default_templates').iterdir():
+    required_files += [str(p.relative_to(pathlib.Path(__file__).parent))]
+
 with open('requirements.txt') as f:
     deps = f.read().splitlines()
 
