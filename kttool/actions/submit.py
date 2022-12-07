@@ -54,7 +54,7 @@ class Submit(Action):
         ac_ct = 0
         is_ac = True
         rejected = finished = False
-        _status = status = parsed_result.overall_status
+        status = parsed_result.overall_status
 
         for res in parsed_result.test_cases:
             _class = res.get('class', None)
@@ -71,12 +71,10 @@ class Submit(Action):
 
         finished = rejected or ac_ct == num_test_cases
 
-        if status in {'Compiling', 'Running', 'New'}:
-            ...
+        if status in {'Compiling', 'Running', 'New'} or not finished:
+            _status = color_cyan(status)
         elif status == 'Compile Error':
             _status = color_red(status)
-        elif not finished:
-            _status = color_cyan(status)
         elif is_ac:
             _status = color_green(status)
         else:
@@ -92,7 +90,8 @@ class Submit(Action):
         )
 
     def _is_finished(
-        self, output_lines: output, submission_result: SubmissionResult,
+        self, output_lines: output.SignalDict,
+        submission_result: SubmissionResult,
         parsed_result: Optional[SubmissionParseResult]
     ) -> bool:
         """ Judge whether the result and status obtained from kattis submission
@@ -152,7 +151,7 @@ class Submit(Action):
                 'div', class_='status testcase testcase-row'
             )
             status_ret = soup.find(
-                'div', class_='status is-status-accepted'
+                'div', class_='status'
             ).next_element.next_element
 
             runtime_ret = status_ret.next_element

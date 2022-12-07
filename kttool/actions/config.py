@@ -1,6 +1,6 @@
 from pathlib import Path
 import readline, glob, os, json
-from ..logger import log
+from ..logger import log, log_red
 from ..base import Action
 from ..logger import color_cyan, color_green, color_red, log_green
 from ..utils import MAP_TEMPLATE_TO_PLANG, PLanguage, ask_with_default
@@ -126,9 +126,14 @@ $%rand%$   Random string with 8 character (including "a-z" "0-9")
             if v["default"]:
                 default_key = k
         res = input()
+        if res not in existed_templates:
+            log_red(
+                f'Invalid template chosen. Template {res} is not in ur config file'
+            )
+            return
 
-        assert res in existed_templates, f'Invalid template chosen. Template {res} is not in ur config file'
-        existed_templates[default_key]["default"] = False
+        if default_key:
+            existed_templates[default_key]["default"] = False
         existed_templates[res]["default"] = True
         with open(self.kt_config, 'w') as kt_config:
             json.dump(existed_templates, kt_config, indent=2)
