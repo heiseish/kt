@@ -1,3 +1,4 @@
+from __future__ import annotations
 import re
 import time
 from dataclasses import dataclass
@@ -10,7 +11,7 @@ from bs4.element import ResultSet
 from reprint import output
 
 from ..base import Action, require_login
-from ..logger import color_cyan, color_green, color_red, log_green, log_red
+from ..logger import color_cyan, color_green, color_red, log_cyan, log_green, log_red
 
 __all__ = ['Submit']
 
@@ -49,7 +50,8 @@ class Submit(Action):
     @staticmethod
     def _parse_verdict(
         parsed_result: SubmissionParseResult
-    ) -> SubmissionVerdict:
+    ) -> SubmissionVerdict | None:
+        if parsed_result.test_cases is None: return None
         num_test_cases = len(parsed_result.test_cases)
         ac_ct = 0
         is_ac = True
@@ -112,8 +114,8 @@ class Submit(Action):
         if parsed_result is None:
             return False
 
-        verdict: SubmissionVerdict = self._parse_verdict(parsed_result)
-
+        verdict: None | SubmissionVerdict = self._parse_verdict(parsed_result)
+        if verdict is None: return False
         res = [AC_ICON] * verdict.ac_test_cases
         if verdict.is_rejected:
             res.append(RJ_ICON)
@@ -187,7 +189,7 @@ class Submit(Action):
                     if done:
                         break
                 except Exception as e:
-                    log_red(f'Internal error: {e!r}')
+                    log_cyan('Waitinng for result...')
 
                 time.sleep(sleep_time)
                 cur_time += sleep_time
