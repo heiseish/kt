@@ -1,3 +1,4 @@
+from __future__ import annotations
 import json
 import shutil
 from collections import namedtuple
@@ -68,6 +69,8 @@ class Gen(Action):
 
     def _parse_sample_data(self, data: bs4.ResultSet) -> List[_SampleData]:
         sample_data = []
+        if data is None:
+            return []
         for i in range(len(data)):
             if i & 1:
                 sample_data.append(
@@ -89,6 +92,17 @@ class Gen(Action):
                 )
         return sample_data
 
+    def _parse_samples_url(self, url: str) -> None | bs4.ResultSet:
+        page = requests.get(url, cookies=self.cookies, headers=HEADERS)
+        soup = BeautifulSoup(page.content, 'html.parser')
+        ret: None | bs4.ResultSet = None
+        for sample in soup.find_all('table', class_='sample'):
+            if ret is None:
+                ret = sample.find_all('pre')
+            else:
+                ret += sample.find_all('pre')
+        return ret
+
     @require_login
     def _generate_samples(self) -> None:
         """ Generate sample input file for `self.problem_id`
@@ -105,13 +119,11 @@ class Gen(Action):
         - Generate a template file (distinctivecharacter.cpp) if a template file is provided in the .ktconfig file
         """
         url = self.get_problem_url()
-        page = requests.get(url, cookies=self.cookies, headers=HEADERS)
-        soup = BeautifulSoup(page.content, 'html.parser')
-        data = soup.find_all('pre')
+        data = self._parse_samples_url(url)
         sample_data = self._parse_sample_data(data)
 
         assert len(data) % 2 == 0, 'Internal error: Number of sample input '\
-            ' is not equal to number of sample output'
+            f' is not equal to number of sample output data={data!r}'
 
         for sample in sample_data:
             self._write_sample(sample, self.cwd)
