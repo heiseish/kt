@@ -11,6 +11,11 @@ __all__ = ['Update']
 
 @final
 class Update(Action):
+    """Usage: kt update
+
+    Update kttool to the latest version
+    """
+
     _PYPI_PACKAGE_INFO = 'https://pypi.org/pypi/kttool/json'
 
     def _act(self) -> None:

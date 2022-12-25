@@ -27,7 +27,15 @@ class _SampleData:
 
 @final
 class Gen(Action):
-    ''' Handle `gen` command for kt_tool '''
+    """Usage: kt gen <problem_id>
+
+    Generate a folder which contains the template code (for the default language of choice) and the sample inputs and outputs associated with the 
+    problem id. 
+
+    Options
+    --------
+    problem_id: Kattis problem id
+    """
     REQUIRED_CONFIG = True
 
     problem_id: str

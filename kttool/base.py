@@ -59,7 +59,7 @@ class Action(abc.ABC):
     __slots__ = 'cwd', 'config_path', 'cfg', 'cookies', 'kt_config', 'file_name', 'lang', \
         'pre_script', 'script', 'post_script', 'is_logged_in'
 
-    def __init__(self, *, cwd: Optional[Path] = None):
+    def __init__(self, *, cwd: None | Path = None):
         self.config_path = Path.home() / '.kattisrc'  # kattis config file
         self.kt_config = Path.home() / '.ktconfig'  # kt tool file
         self.cfg = None
@@ -193,9 +193,9 @@ class Action(abc.ABC):
             uri, *args, **kwargs, cookies=self.cookies, headers=HEADERS
         )
 
-    def get_problem_url(self) -> str:
+    def get_problem_url(self, supplied_id: None | str = None) -> str:
         domain = f"https://{self.get_url('hostname')}"
-        problem_id = self._get_problem_id()
+        problem_id = supplied_id or self._get_problem_id()
         return os.path.join(domain, 'problems', problem_id)
 
     def _detect_code_files(self) -> bool:

@@ -11,6 +11,15 @@ __all__ = ['Config']
 
 @final
 class Config(Action):
+    """Usage: kt config
+
+    Create or update a template config for your code. This command should be ran the first time you used the tool or whenever you want to update your
+    testing/language configs. Concretely, the config stores the information to:
+    - Path to your template code (C++, py, etc) to copy whenever `kt gen` is ran
+    - before_script that executed once before testing your code against the samples
+    - script to run the code/binary
+    - after_script that usually does the clean up
+    """
     def add_template(self) -> None:
         question = 'Which template would you like to add:\n'
         selectable_lang = {}

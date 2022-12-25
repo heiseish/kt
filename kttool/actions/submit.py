@@ -45,7 +45,11 @@ class SubmissionVerdict:
 
 @final
 class Submit(Action):
-    '''Handle kt submit action to push the file to kattis website'''
+    """Usage: kt submit
+
+    Submit the current code in the directionary (assumed to be generated using kttool) to the host and check for result. 
+    If multiple suitables runable code files are detected, the user can specify which one to submit
+    """
     REQUIRED_CONFIG = True
 
     @staticmethod

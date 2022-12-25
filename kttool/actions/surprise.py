@@ -29,6 +29,17 @@ class KattisProblem:
 
 @final
 class Surprise(Action):
+    """Usage: kt surprise [lower_bound] [upperBound]
+
+    Randomly retrieve a problem from Kattis whose difficulty belongs to the range
+    Naturally lower_bound has to be <= upperbound
+
+    Options
+    --------
+    lower_bound: lower range bound to randomize. Default is 0
+    upper_bound: lower range bound to randomize. Default is 10
+    """
+
     REQUIRED_CONFIG = True
 
     _FIRST_INDEX = 0

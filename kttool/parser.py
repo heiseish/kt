@@ -1,4 +1,6 @@
-from typing import List
+from __future__ import annotations
+
+from typing import List, Type
 from .actions.gen import Gen
 from .actions.test import Test
 from .actions.submit import Submit
@@ -8,6 +10,7 @@ from .actions.version import Version
 from .actions.update import Update
 from .actions.surprise import Surprise
 from .base import Action
+from .logger import log, log_red
 
 map_key_to_class = {
     'gen': Gen,
@@ -18,7 +21,6 @@ map_key_to_class = {
     'version': Version,
     'update': Update,
     'surprise': Surprise,
-    'random': Surprise,  # alias
 }
 
 action_with_aliases = {
@@ -35,7 +37,15 @@ action_with_aliases = {
 }
 
 
-def arg_parse(args: List[str]) -> Action:
+def _is_help(args: List[str]) -> bool:
+    return any(x in args for x in {'-h', '--help', 'help'})
+
+
+def _print_help(klass: Type[Action]) -> None:
+    log(klass.__doc__)
+
+
+def arg_parse(args: List[str]) -> None | Action:
     ''' Generate an appropriate command class based on user command stirng '''
     if len(args) == 0:
         raise ValueError(f'No command provided to kt')
@@ -43,4 +53,12 @@ def arg_parse(args: List[str]) -> Action:
         raise ValueError(
             f'First argument should be one of {list(map_key_to_class.keys())}'
         )
-    return map_key_to_class[args[0]](*args[1:])
+    klass = action_with_aliases[args[0]]
+    if _is_help(args[1:]):
+        return _print_help(klass)
+
+    try:
+        return klass(*args[1:])
+    except:
+        log_red('Invalid usage')
+        return _print_help(klass)

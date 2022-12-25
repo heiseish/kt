@@ -92,3 +92,7 @@ pip install --upgrade kttool
 # License
 
 [MIT License](LICENSE)
+
+# Remaining features yet to be implemented
+
+- [ ] Multiple profiles. Ability to switch between Kattis open domain and competition domain with ease

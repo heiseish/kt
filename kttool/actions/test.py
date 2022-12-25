@@ -34,8 +34,14 @@ class Sample:
 
 @final
 class Test(Action):
-    """Handle test command, run the code with local input and test against local output
+    """Usage: kt test
+
+    Run the set of scripts to compile and test the runable code file. 
+    - before_script that executed once before testing your code against the samples
+    - script to run the code/binary
+    - after_script that usually does the clean up
     """
+
     REQUIRED_CONFIG = True
 
     def _compare_samples(self, samples: List[Sample]) -> None:
