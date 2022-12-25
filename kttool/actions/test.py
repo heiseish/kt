@@ -9,7 +9,7 @@ from collections import namedtuple
 from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Tuple
-
+from typing_extensions import final
 import psutil
 
 from ..base import Action
@@ -32,6 +32,7 @@ class Sample:
     output_file: Path
 
 
+@final
 class Test(Action):
     """Handle test command, run the code with local input and test against local output
     """

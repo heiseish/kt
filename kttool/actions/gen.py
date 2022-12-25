@@ -6,14 +6,13 @@ from concurrent.futures import ProcessPoolExecutor
 from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Optional
-
+from typing_extensions import final
 import bs4
-import requests
 from bs4 import BeautifulSoup
 
 from ..base import Action, require_login
 from ..logger import log, log_green, log_red
-from ..utils import HEADERS, MAP_TEMPLATE_TO_PLANG
+from ..utils import MAP_TEMPLATE_TO_PLANG
 
 __all__ = ['Gen']
 
@@ -26,6 +25,7 @@ class _SampleData:
     data: str
 
 
+@final
 class Gen(Action):
     ''' Handle `gen` command for kt_tool '''
     REQUIRED_CONFIG = True
@@ -93,7 +93,7 @@ class Gen(Action):
         return sample_data
 
     def _parse_samples_url(self, url: str) -> None | bs4.ResultSet:
-        page = requests.get(url, cookies=self.cookies, headers=HEADERS)
+        page = self._request_get(url)
         soup = BeautifulSoup(page.content, 'html.parser')
         ret: None | bs4.ResultSet = None
         for sample in soup.find_all('table', class_='sample'):

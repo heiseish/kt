@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import abc
 import json
 import os
@@ -37,19 +39,21 @@ class Action(abc.ABC):
     Base class for handle general command.
     Handle loading up .kattisrc config file
     '''
-    REQUIRED_CONFIG = False
+    REQUIRED_CONFIG: bool = False
+
+    _PRINTED_OUT_USERNAME: bool = False
 
     cwd: Path
     config_path: Path
-    cfg: Optional[ConfigParser]
+    cfg: None | ConfigParser
     cookies: Any
     kt_config: Path
 
-    file_name: Optional[Path]
-    lang: Optional[str]
-    pre_script: Optional[str]
-    script: Optional[str]
-    post_script: Optional[str]
+    file_name: None | Path
+    lang: None | str
+    pre_script: None | str
+    script: None | str
+    post_script: None | str
     is_logged_in: bool
 
     __slots__ = 'cwd', 'config_path', 'cfg', 'cookies', 'kt_config', 'file_name', 'lang', \
@@ -133,7 +137,11 @@ class Action(abc.ABC):
         KATTIS password).
         Please download a new .kattisrc file'''
             )
+
+        if Action._PRINTED_OUT_USERNAME:
+            return
         log(f'Username: {color_green(username)}')
+        Action._PRINTED_OUT_USERNAME = True
 
     def login(self) -> None:
         """ Try to login and obtain cookies from succesful signin

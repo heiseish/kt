@@ -3,7 +3,7 @@ import re
 import time
 from dataclasses import dataclass
 from typing import Any, Optional
-
+from typing_extensions import final
 import emoji
 import requests
 from bs4 import BeautifulSoup
@@ -43,6 +43,7 @@ class SubmissionVerdict:
     is_rejected: bool
 
 
+@final
 class Submit(Action):
     '''Handle kt submit action to push the file to kattis website'''
     REQUIRED_CONFIG = True
@@ -51,7 +52,8 @@ class Submit(Action):
     def _parse_verdict(
         parsed_result: SubmissionParseResult
     ) -> SubmissionVerdict | None:
-        if parsed_result.test_cases is None: return None
+        if parsed_result.test_cases is None:
+            return None
         num_test_cases = len(parsed_result.test_cases)
         ac_ct = 0
         is_ac = True
@@ -115,7 +117,8 @@ class Submit(Action):
             return False
 
         verdict: None | SubmissionVerdict = self._parse_verdict(parsed_result)
-        if verdict is None: return False
+        if verdict is None:
+            return False
         res = [AC_ICON] * verdict.ac_test_cases
         if verdict.is_rejected:
             res.append(RJ_ICON)

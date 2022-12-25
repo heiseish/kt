@@ -4,10 +4,12 @@ from ..logger import log, log_red
 from ..base import Action
 from ..logger import color_cyan, color_green, color_red, log_green
 from ..utils import MAP_TEMPLATE_TO_PLANG, PLanguage, ask_with_default
+from typing_extensions import final
 
 __all__ = ['Config']
 
 
+@final
 class Config(Action):
     def add_template(self) -> None:
         question = 'Which template would you like to add:\n'

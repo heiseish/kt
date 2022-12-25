@@ -1,11 +1,12 @@
 import webbrowser
-
+from typing_extensions import final
 from ..base import Action
 from ..logger import log
 
 __all__ = ['Open']
 
 
+@final
 class Open(Action):
     REQUIRED_CONFIG = True
 

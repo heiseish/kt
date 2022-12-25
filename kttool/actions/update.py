@@ -4,10 +4,12 @@ from ..base import Action
 from ..logger import color_cyan, color_green, log, log_red
 import requests
 import sys
+from typing_extensions import final
 
 __all__ = ['Update']
 
 
+@final
 class Update(Action):
     _PYPI_PACKAGE_INFO = 'https://pypi.org/pypi/kttool/json'
 
