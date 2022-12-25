@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 from kttool.version import version
-import pathlib
+import pathlib, os
 from distutils.command.install import INSTALL_SCHEMES
 
 HERE = pathlib.Path(__file__).parent
@@ -11,7 +11,7 @@ for scheme in INSTALL_SCHEMES.values():
 
 required_files = ['kttool/VERSION', 'LICENSE', 'requirements.txt']
 for p in (pathlib.Path('kttool') / 'default_templates').iterdir():
-    required_files += [str(p.relative_to(pathlib.Path(__file__).parent))]
+    required_files += [os.path.relpath(pathlib.Path(__file__).parent, p)]
 
 with open('requirements.txt') as f:
     deps = f.read().splitlines()
