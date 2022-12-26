@@ -5,13 +5,11 @@ import shlex
 import subprocess
 import tempfile
 import time
-from collections import namedtuple
 from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Tuple
 from typing_extensions import final
 import psutil
-
 from ..base import Action
 from ..logger import (
     color_cyan, color_green, color_red, log, log_cyan, log_green, log_red,

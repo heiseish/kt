@@ -46,9 +46,7 @@ $%file%$   Name of source file (Excluding suffix, e.g. "a")
 $%rand%$   Random string with 8 character (including "a-z" "0-9")
         '''
         )
-
         existed_templates = self.load_kt_config()
-
         for template_type, lang in MAP_TEMPLATE_TO_PLANG.items():
             if template_type not in existed_templates:
                 temp = f'{idx} ({lang.extension}): {lang.full_name}\n'
@@ -59,7 +57,6 @@ $%rand%$   Random string with 8 character (including "a-z" "0-9")
         res = input(question)
         ret = int(res)
         assert 1 <= ret < idx, 'Invalid input'
-
         selected_lang: PLanguage = selectable_lang[ret][1]
 
         def complete(text, state):

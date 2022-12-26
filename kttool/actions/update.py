@@ -1,7 +1,7 @@
 import subprocess
 from ..version import version
 from ..base import Action
-from ..logger import color_cyan, color_green, log, log_red
+from ..logger import color_green, log, log_red
 import requests
 import sys
 from typing_extensions import final

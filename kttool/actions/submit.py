@@ -2,16 +2,15 @@ from __future__ import annotations
 import re
 import time
 from dataclasses import dataclass
-from typing import Any, Optional
+from typing import Optional
 from typing_extensions import final
 import emoji
 import requests
 from bs4 import BeautifulSoup
 from bs4.element import ResultSet
 from reprint import output
-
 from ..base import Action, require_login
-from ..logger import color_cyan, color_green, color_red, log_cyan, log_green, log_red
+from ..logger import color_cyan, color_green, color_red, log_cyan, log_green
 
 __all__ = ['Submit']
 
@@ -52,6 +51,16 @@ class Submit(Action):
     """
     REQUIRED_CONFIG = True
 
+    _PENDING_STATE = {
+        'Compiling', 'Running', 'New', 'Waiting for compile', 'Waiting for run'
+    }
+    _REJECTED_STATE = {
+        'Compile Error', 'Wrong Answer', 'Time Limit Exceeded', 'Judge Error',
+        'Memory Limit Exceeded', 'Output Limit Exceeded', 'Illegal Function',
+        'Run-Time Error'
+    }
+    _ACCEPTED_STATE = {'Accepted'}
+
     @staticmethod
     def _parse_verdict(
         parsed_result: SubmissionParseResult
@@ -60,8 +69,7 @@ class Submit(Action):
             return None
         num_test_cases = len(parsed_result.test_cases)
         ac_ct = 0
-        is_ac = True
-        rejected = finished = False
+        finished = False
         status = parsed_result.overall_status
 
         for res in parsed_result.test_cases:
@@ -74,19 +82,16 @@ class Submit(Action):
                 continue
             else:  # rejected
                 rejected = True
-                is_ac = False
                 break
 
-        finished = rejected or ac_ct == num_test_cases
-
-        if status in {'Compiling', 'Running', 'New'} or not finished:
-            _status = color_cyan(status)
-        elif status == 'Compile Error':
+        if status in Submit._REJECTED_STATE:
             _status = color_red(status)
-        elif is_ac:
+            finished = True
+        elif status in Submit._ACCEPTED_STATE:
             _status = color_green(status)
+            finished = True
         else:
-            _status = color_red(status)
+            _status = color_cyan(status)
 
         return SubmissionVerdict(
             verdict=_status,
