@@ -1,18 +1,19 @@
 #![allow(unused_variables)]
 #![allow(unused_must_use)]
 #![allow(dead_code)]
+#![allow(unused_macros)]
 use std::io::{self, prelude::*};
 
 fn solve<R: BufRead, W: Write>(mut input: FastInput<R>, mut w: W) {
     // read in int/float
-    // let a: i32 = input.token();
+    let a: i32 = input.token();
     // let a: f32 = input.token();
 
-    // read in string
-    let mut s = String::new();
-    input.read_line(&mut s);
-    write!(w, "{}", s);
+    // Read in string
+    let mut a = String::new();
+    input.read_line(&mut a);
 }
+
 fn main() {
     let stdin = io::stdin();
     let stdout = io::stdout();
@@ -32,14 +33,20 @@ struct FastInput<R> {
 
 impl<R: std::io::BufRead> FastInput<R> {
     //! Quick wrapper function without implementing DeRef
-    pub fn read_line(&mut self, buf: &mut String) {
-        self.stdin.read_line(buf);
-        if buf.ends_with('\n') {
-            buf.pop();
-            if buf.ends_with('\r') {
-                buf.pop();
+    pub fn read_line(&mut self, buf: &mut String) -> bool {
+        if let Ok(n) = self.stdin.read_line(buf) {
+            if n == 0 {
+                return false;
             }
+            if buf.ends_with('\n') {
+                buf.pop();
+                if buf.ends_with('\r') {
+                    buf.pop();
+                }
+            }
+            return true;
         }
+        false
     }
 }
 
@@ -48,90 +55,16 @@ impl<R: BufRead> From<R> for FastInput<R> {
         FastInput { stdin: r, pos: 0 }
     }
 }
-impl<R: BufRead> TokenStream<u8> for FastInput<R> {
-    fn token(&mut self) -> u8 {
-        loop {
-            if let Ok(buf) = self.stdin.fill_buf() {
-                while self.pos < buf.len() {
-                    self.pos += 1;
-                    if buf[self.pos - 1] > 32 {
-                        return buf[self.pos - 1];
-                    }
-                }
-                if self.pos == 0 {
-                    return 0;
-                }
-            } else {
-                return 0;
-            }
-            self.stdin.consume(self.pos);
-            self.pos = 0;
-        }
-    }
-}
-impl<R: BufRead> TokenStream<Vec<u8>> for FastInput<R> {
-    fn token(&mut self) -> Vec<u8> {
-        let mut ans = Vec::new();
-        let mut parse_token = false;
-        loop {
-            if let Ok(buf) = self.stdin.fill_buf() {
-                if !parse_token {
-                    while self.pos < buf.len() && buf[self.pos] <= 32 {
-                        self.pos += 1;
-                    }
-                }
-                while self.pos < buf.len() && buf[self.pos] > 32 {
-                    parse_token = true;
-                    ans.push(buf[self.pos]);
-                    self.pos += 1;
-                }
-                if self.pos != buf.len() || self.pos == 0 {
-                    return ans;
-                }
-            }
-            self.stdin.consume(self.pos);
-            self.pos = 0;
-        }
-    }
-}
-macro_rules! impl_token_stream {
-	($($t:ident),+) => {$(
-			impl<R: BufRead> TokenStream<$t> for FastInput<R> {
-				fn token(&mut self) -> $t {
-					let mut ans = 0;
-					let mut parse_token = false;
-					loop {
-						if let Ok(buf) = self.stdin.fill_buf() {
-							if !parse_token {
-								while self.pos < buf.len() && buf[self.pos] <= 32 {
-									self.pos += 1;
-								}
-							}
-							while self.pos < buf.len() && buf[self.pos] > 32 {
-								parse_token = true;
-								ans = ans * 10 + (buf[self.pos] - b'0') as $t;
-								self.pos += 1;
-							}
-							if self.pos != buf.len() || self.pos == 0 {
-								return ans;
-							}
-						}
-						self.stdin.consume(self.pos);
-						self.pos = 0;
-					}
-				}
-			}
-			)+}
-}
 
 macro_rules! impl_token_stream {
-	($($t:ident),+) => {$(
+    ($($t:ident),+) => {$(
         impl<R: BufRead> TokenStream<$t> for FastInput<R> {
             fn token(&mut self) -> $t {
-                let mut ans = 0 as $t;
+                let mut ans = 0;
                 let mut parse_token = false;
                 let mut dec = false;
-                let mut dec_point = 1 as $t;
+                let mut dec_point = 1;
+                let mut negate = 1;
                 loop {
                     if let Ok(buf) = self.stdin.fill_buf() {
                         if !parse_token {
@@ -141,20 +74,20 @@ macro_rules! impl_token_stream {
                         }
                         while self.pos < buf.len() && buf[self.pos] > 32 {
                             parse_token = true;
-
-                            if buf[self.pos] == b'.' {
+                            if buf[self.pos] == b'-' {
+                                negate = -1;
+                            } else if buf[self.pos] == b'.' {
                                 dec = true;
-                                self.pos += 1;
-                                continue;
-                            }
-                            ans = ans * 10 as $t + (buf[self.pos] - b'0') as $t;
-                            if dec {
-                                dec_point += 1 as $t;
+                            } else {
+                                ans = ans * 10 + (buf[self.pos] - b'0');
+                                if dec {
+                                    dec_point *= 10;
+                                }
                             }
                             self.pos += 1;
                         }
                         if self.pos != buf.len() || self.pos == 0 {
-                            return ans / dec_point;
+                            return negate as $t * ans as $t / dec_point as $t;
                         }
                     }
                     self.stdin.consume(self.pos);
@@ -170,6 +103,7 @@ impl_token_stream!(i32);
 impl_token_stream!(i64);
 impl_token_stream!(i16);
 impl_token_stream!(i8);
+impl_token_stream!(u8);
 impl_token_stream!(u16);
 impl_token_stream!(u32);
 impl_token_stream!(u64);

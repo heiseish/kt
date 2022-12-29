@@ -71,6 +71,7 @@ class Submit(Action):
         ac_ct = 0
         finished = False
         status = parsed_result.overall_status
+        rejected = False
 
         for res in parsed_result.test_cases:
             _class = res.get('class', None)
@@ -200,8 +201,8 @@ class Submit(Action):
                     )
                     if done:
                         break
-                except Exception as e:
-                    log_cyan('Waitinng for result...')
+                except Exception as ex:
+                    log_cyan(f'Waitinng for result...')
 
                 time.sleep(sleep_time)
                 cur_time += sleep_time
