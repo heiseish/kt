@@ -2,7 +2,7 @@ from __future__ import annotations
 import re
 import time
 from dataclasses import dataclass
-from typing import Optional
+from typing import Optional, Set
 from typing_extensions import final
 import emoji
 import requests
@@ -59,7 +59,11 @@ class Submit(Action):
         'Memory Limit Exceeded', 'Output Limit Exceeded', 'Illegal Function',
         'Run-Time Error'
     }
-    _ACCEPTED_STATE = {'Accepted'}
+    _ACCEPTED_STATE = {'Accepted', r'Accepted (\d.+)'}
+
+    @staticmethod
+    def _match_state(status: str, state: Set[str]) -> bool:
+        return any(re.match(x, status) is not None for x in state)
 
     @staticmethod
     def _parse_verdict(
@@ -85,10 +89,10 @@ class Submit(Action):
                 rejected = True
                 break
 
-        if status in Submit._REJECTED_STATE:
+        if Submit._match_state(status, Submit._REJECTED_STATE):
             _status = color_red(status)
             finished = True
-        elif status in Submit._ACCEPTED_STATE:
+        elif Submit._match_state(status, Submit._ACCEPTED_STATE):
             _status = color_green(status)
             finished = True
         else:

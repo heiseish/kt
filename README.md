@@ -62,6 +62,18 @@ kt submit
 You should be able to see how many test cases your code has passed so far
 <img src="https://raw.githubusercontent.com/heiseish/kt/master/img/ac.png">
 
+```
+$ kt open -h
+Usage: kt open [problem_id]
+
+    Open the default browser with the link to the full problem statement on Kattis. If no problem id is provided, the problem id wil be deduced using the
+    current directionary name
+
+    Options
+    --------
+    problem_id: Kattis problem id
+```
+
 ### Update version of kttool
 
 Check current version of kttool
