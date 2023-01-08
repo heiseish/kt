@@ -228,7 +228,7 @@ class Action(abc.ABC):
         if len(runnable_files) > 1:
             log_cyan('Choose a file to run')
             for i in range(len(runnable_files)):
-                log(f'  {i}: {runnable_files[i].file_name}')
+                log(f'  {i}: {runnable_files[i].name}')
             opt = int(ask_with_default('Choose a file to run', default_val='0'))
             if not (0 <= opt < len(runnable_files)):
                 log_red('Invalid option chosen')
