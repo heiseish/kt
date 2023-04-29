@@ -135,17 +135,23 @@ class Test(Action):
         in_pattern = re.compile("in(\d+).txt")
         ans_pattern = re.compile("ans(\d+).txt")
         for input_file in input_files:
-            idx = int(in_pattern.search(input_file.name).group(1))
-            for output_file in output_files:
-                if idx == int(ans_pattern.search(output_file.name).group(1)):
-                    usable_samples.append(
-                        Sample(
-                            index=idx,
-                            input_file=Path(input_file).absolute(),
-                            output_file=Path(output_file).absolute()
+            try:
+                idx = int(in_pattern.search(input_file.name).group(1))
+                for output_file in output_files:
+                    if idx == int(
+                        ans_pattern.search(output_file.name).group(1)
+                    ):
+                        usable_samples.append(
+                            Sample(
+                                index=idx,
+                                input_file=Path(input_file).absolute(),
+                                output_file=Path(output_file).absolute()
+                            )
                         )
-                    )
-                    break
+                        break
+            except:
+                ...
+        log(f'{color_green(len(usable_samples))} samples found.')
         # run test from ascending number of file index
         return sorted(usable_samples, key=lambda x: x.index)
 
